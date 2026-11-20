@@ -1,9 +1,4 @@
 import type { ComposerModalData } from './composer-modal-data'
-import { toast } from 'sonner'
-import {
-  formatWorkspaceCreateError,
-  getWorkspaceCreateErrorToastMessage
-} from '@/lib/workspace/creation/workspace-create-error-format'
 import type {
   AgentPickerDraft,
   AgentPickerEntry
@@ -39,13 +34,17 @@ import { useAgentsOfferedForLaunch } from '@/lib/agent-session/launch/inventory/
 import { shouldAllowComposerEnterSubmitTarget } from '@/lib/workspace/creation/new-workspace-enter-guard'
 import { isScreenSubmitShortcut } from '@/lib/keyboard/screen-submit-shortcut'
 import type { TuiAgent } from '../../../../../shared/agent-launch/catalog/tui-agent'
-import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import { getWorkspaceComposerInitialFocusTarget } from '@/lib/workspace/creation/workspace-composer-initial-focus'
 import '@/components/sidebar/workspace-creation/folder/folder-workspace-source-repos'
 import { getFolderWorkspacePrimaryActionLabel } from '@/components/sidebar/workspace-creation/folder/folder-workspace-source-selection'
 import { useAgentMenuObservation } from '@/components/agent/launch-menu/use-new-tab-agent-menu-rows'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/keyboard/app-keyboard-router'
+import {
+  toastReopenComposerAfterLegacyFailure,
+  useQuickMultiRepo,
+  useSingleProjectCreateRecorder
+} from '@/components/new-workspace/quick-create-support'
 
 // Keep Add Project’s clone/SSH machinery outside the composer entry render, matching App loading.
 const HostedAddRepoDialog = lazyWithRetry(
@@ -129,6 +128,7 @@ function QuickTabBody({
 }): React.JSX.Element {
   const t = useTranslate()
   const settings = useAppStore((s) => s.settings)
+  const recorder = useSingleProjectCreateRecorder(onClose)
   const {
     cardProps,
     composerRef,
@@ -154,7 +154,7 @@ function QuickTabBody({
     initialParentWorktreeId: modalData.initialParentWorktreeId,
     ...(modalData.initialBaseBranch ? { initialBaseBranch: modalData.initialBaseBranch } : {}),
     persistDraft: false,
-    onCreated: onClose,
+    onCreated: recorder.onCreated,
     isSubmissionCancelled,
     ...(modalData.telemetrySource ? { telemetrySource: modalData.telemetrySource } : {}),
     enableIssueAutomation: modalData.enableIssueAutomation === true
@@ -214,7 +214,15 @@ function QuickTabBody({
       : undefined
   const quickAgentSurface = quickAgentPick.agent === quickAgent ? quickAgentPick.surface : undefined
   const launchSelection = observation.selectionFor(quickAgent, quickAgentSurface)
-  const createDisabled = formDisabled || !launchSelection.ready
+  const { multiRepo, createDisabled } = useQuickMultiRepo({
+    cardProps,
+    projectIdRef: recorder.projectIdRef,
+    quickAgent,
+    onClose,
+    isSubmissionCancelled,
+    singleCreateDisabled: formDisabled || !launchSelection.ready,
+    launchReady: launchSelection.ready
+  })
 
   const handleQuickAgentChange = useCallback(
     (
@@ -233,41 +241,22 @@ function QuickTabBody({
     if (createDisabled) {
       return
     }
+    if (multiRepo.active) {
+      await multiRepo.submit()
+      return
+    }
     await submitQuick(quickAgent, {
       // Blank Terminal is the setup-only create: no agent, and no extra shell beside setup.
       setupOnly: quickAgent === null,
       launchChoice: launchSelection.choice,
-      onLegacyPreparationFailure: (error) => {
-        if (isSubmissionCancelled()) {
-          return
-        }
-        const snapshot = {
-          ...modalData,
-          prefilledName: cardProps.name,
-          initialRepoId: cardProps.repoId,
-          initialBaseBranch: cardProps.baseBranch,
-          initialWorkspaceTarget:
-            cardProps.selectedProjectId && cardProps.selectedRepoExecutionHostId
-              ? {
-                  projectId: cardProps.selectedProjectId,
-                  hostId: cardProps.selectedRepoExecutionHostId,
-                  projectHostSetupId: cardProps.selectedProjectHostSetupId ?? null
-                }
-              : modalData.initialWorkspaceTarget,
-          linkedWorkItem: cardProps.linkedWorkItem,
-          recovery: { ...quickAgentPick, agent: quickAgent, note: cardProps.note }
-        }
-        toast.error(getWorkspaceCreateErrorToastMessage(formatWorkspaceCreateError(error)), {
-          action: {
-            label: translate('auto.lib.composerCreateHandoff.reopen', 'Reopen'),
-            onClick: () => {
-              if (!isSubmissionCancelled() && useAppStore.getState().activeModal === 'none') {
-                useAppStore.getState().openModal('new-workspace-composer', snapshot)
-              }
-            }
-          }
-        })
-      },
+      onLegacyPreparationFailure: (error) =>
+        toastReopenComposerAfterLegacyFailure(error, {
+          modalData,
+          cardProps,
+          quickAgentPick,
+          quickAgent,
+          isSubmissionCancelled
+        }),
       ...quickWorkspacePickerInputs(
         pickerDraft,
         quickAgentPick.entry,
@@ -276,6 +265,7 @@ function QuickTabBody({
     })
   }, [
     createDisabled,
+    multiRepo,
     quickAgent,
     launchSelection.choice,
     submitQuick,
@@ -374,6 +364,7 @@ function QuickTabBody({
         // Chips list offered agents, keeping a pick whose chat is still being learned.
         detectedAgentIds={chipAgentIds}
         createDisabled={createDisabled}
+        multiRepo={multiRepo}
         agentSurfaceRows={
           cardProps.agentRows
             ? {
@@ -385,7 +376,7 @@ function QuickTabBody({
               }
             : undefined
         }
-        primaryActionLabel={primaryActionLabel}
+        primaryActionLabel={multiRepo.active ? multiRepo.primaryActionLabel : primaryActionLabel}
         onOpenAgentSettings={(invoker) => {
           agentSettingsInvoker.current = invoker
           setAgentSettingsOpen(true)

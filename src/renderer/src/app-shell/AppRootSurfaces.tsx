@@ -25,6 +25,7 @@ import { MacosUpdateRequirementHost } from '../components/macos-update-requireme
 import { shouldRenderPetOverlay } from '../components/pet/pet-overlay-visibility'
 import { useAppStore } from '../store/index'
 import { shouldMountUpdateCardForStatus } from './root-surfaces/update-notification-visibility'
+import { MultiRepoDeleteModalHost } from './MultiRepoDeleteModalHost'
 import { useLazyModalMounts } from './root-surfaces/use-lazy-modal-mounts'
 import { AppNotificationCards } from './root-surfaces/AppNotificationCards'
 import {
@@ -324,6 +325,7 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
             <DeleteWorktreeDialog />
           </ModalBoundary>
         ) : null}
+        <MultiRepoDeleteModalHost />
         {activeModal === 'preserved-branch-review' ? (
           <ModalBoundary boundaryId="modal.preserved-branch-review" resetKey>
             <PreservedBranchBatchReviewModal />

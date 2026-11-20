@@ -31,6 +31,8 @@ export type WorkspaceCreateTelemetryArgs = {
   fromExistingBranch: boolean
   /** Folder workspaces omit Git timing and disk-concurrency fields. */
   isFolder: boolean
+  /** Child create of a multi-repo workspace. */
+  multiRepoMember?: boolean
 }
 
 export function beginWorkspaceCreateTelemetry(
@@ -63,6 +65,7 @@ export function beginWorkspaceCreateTelemetry(
         const props: EventProps<'workspace_created'> = {
           source,
           from_existing_branch: !args.isFolder && args.fromExistingBranch,
+          ...(args.multiRepoMember ? { multi_repo_member: true } : {}),
           ...getCohortAtEmit()
         }
         if (!inFlight) {
@@ -102,7 +105,11 @@ export type RuntimeWorkspaceCreateEvents = {
 
 /** Settle concurrency counts before returning, so subsequent preparation work is excluded. */
 export async function trackRuntimeWorkspaceCreate<T>(
-  request: { telemetrySource?: unknown; baseBranch?: string },
+  request: {
+    telemetrySource?: unknown
+    baseBranch?: string
+    placement?: { parentDir: string; leafName: string }
+  },
   perform: (events: RuntimeWorkspaceCreateEvents) => Promise<T>
 ): Promise<T> {
   const session: { current?: WorkspaceCreateTelemetry } = {}
@@ -115,7 +122,8 @@ export async function trackRuntimeWorkspaceCreate<T>(
           repoPath,
           fromExistingBranch:
             typeof request.baseBranch === 'string' && request.baseBranch.length > 0,
-          isFolder: false
+          isFolder: false,
+          multiRepoMember: request.placement !== undefined
         })
         return session.current.timing
       }

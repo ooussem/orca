@@ -21,7 +21,8 @@ import {
 import type { AgentLaunchPreferences } from '../../../../shared/agent-session/lifecycle/operations/agent-session-host-authority'
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { WorktreeLineageResolution } from '../lineage/runtime-worktree-lineage-resolution'
-import { recordCreatedWorktreeLineage as recordCreatedWorktreeLineageState } from '../lineage/runtime-worktree-lineage-recording'
+import type { recordCreatedWorktreeLineage as recordCreatedWorktreeLineageState } from '../lineage/runtime-worktree-lineage-recording'
+import { recordLineageOutsideMultiRepoParent } from '../../multi-repo-workspace/multi-repo-lineage-guard'
 import {
   deliverStartupFollowupPrompt,
   type StartupFollowupPromptOptions,
@@ -208,7 +209,7 @@ export abstract class OrcaRuntimeWithActivateManagedWorktree extends OrcaRuntime
     worktree: Pick<Worktree, 'id' | 'instanceId'>,
     lineageResolution: WorktreeLineageResolution
   ): ReturnType<typeof recordCreatedWorktreeLineageState> {
-    return recordCreatedWorktreeLineageState(this.store, worktree, lineageResolution)
+    return recordLineageOutsideMultiRepoParent(this.store, worktree, lineageResolution)
   }
 
   protected pasteStartupDraftWhenReady(handle: string, draft: WorktreeStartupDraftPaste): void {

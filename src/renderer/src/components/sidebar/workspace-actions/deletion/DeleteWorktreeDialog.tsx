@@ -334,6 +334,7 @@ const DeleteWorktreeDialog = React.memo(function DeleteWorktreeDialog() {
           targetClassName={deleteCopy.targetClassName}
           targetName={isBatchDelete ? undefined : worktree?.displayName}
           description={deleteAllLineage ? lineageDeleteDescription : deleteCopy.description}
+          memberNoteWorktreeId={worktrees.length === 1 ? worktrees[0].id : undefined}
         />
 
         {isMainWorktree ? null : (

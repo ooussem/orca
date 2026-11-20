@@ -17,6 +17,7 @@ import { reposApi } from './api/projects/repos-bridge'
 import { projectsApi } from './api/projects/projects-bridge'
 import { projectGroupsApi } from './api/projects/project-groups-bridge'
 import { folderWorkspacesApi } from './api/workspaces/folder-workspaces-bridge'
+import { multiRepoWorkspacesApi } from './api/multi-repo-workspace-bridge'
 import { sparsePresetsApi } from './api/source-control/sparse-presets-bridge'
 import { worktreesApi } from './api/workspaces/worktrees-bridge'
 import { workspaceCleanupApi } from './api/workspaces/workspace-cleanup-bridge'
@@ -127,6 +128,7 @@ const api = {
   projects: projectsApi,
   projectGroups: projectGroupsApi,
   folderWorkspaces: folderWorkspacesApi,
+  multiRepoWorkspaces: multiRepoWorkspacesApi,
   sparsePresets: sparsePresetsApi,
   worktrees: worktreesApi,
   workspaceCleanup: workspaceCleanupApi,

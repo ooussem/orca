@@ -4,6 +4,7 @@ import { activateTabNumberShortcut } from '@/lib/keyboard/tab-number-shortcuts'
 import { emitCmdJRowIndexJump } from '@/lib/workspace/search/palette/cmd-j-row-index-jump'
 import { getVisibleWorktreeShortcutTargets } from '@/components/sidebar/worktree-list/listing/visible-worktrees'
 import { activateAndRevealWorkspace } from '@/lib/workspace/activation/worktree-activation'
+import { selectWorkspaceRepoFromShortcut } from '@/lib/multi-repo-workspace-repo-navigation'
 import { isGitRepoKind } from '../../../../shared/repository/repo-kind'
 import { runBuiltInOrReplacement } from '@/lib/plugins/commands/plugin-command-replacements'
 import { useAppStore } from '../../store/index'
@@ -117,6 +118,8 @@ export function registerWorkspaceShortcutIpcBridge(unsubs: (() => void)[]): void
       }
     })
   )
+
+  unsubs.push(window.api.ui.onSelectWorkspaceRepo(selectWorkspaceRepoFromShortcut))
 
   unsubs.push(
     window.api.ui.onToggleStatusBar(() => {

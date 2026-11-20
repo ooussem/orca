@@ -129,6 +129,34 @@ describe('Store', () => {
     })
   }
 
+  it('keeps the folder path fixed for a multi-repo workspace but not a plain one', async () => {
+    const store = await createStore()
+    const group = store.createProjectGroup({
+      name: 'Platform',
+      parentPath: '/workspace/platform',
+      createdFrom: 'folder-scan'
+    })
+    const plain = store.createFolderWorkspace({
+      projectGroupId: group.id,
+      name: 'Plain',
+      folderPath: '/workspace/platform/plain'
+    })
+    const multi = store.createFolderWorkspace({
+      projectGroupId: group.id,
+      name: 'Multi',
+      folderPath: '/workspace/platform/multi'
+    })
+    store.updateFolderWorkspace(multi.id, {
+      multiRepo: { version: 1, executionHostId: 'local', rootOwnedByOrca: true, members: [] }
+    })
+
+    store.updateFolderWorkspace(plain.id, { folderPath: '/elsewhere' })
+    store.updateFolderWorkspace(multi.id, { folderPath: '/elsewhere' })
+
+    expect(store.getFolderWorkspace(plain.id)?.folderPath).toBe('/elsewhere')
+    expect(store.getFolderWorkspace(multi.id)?.folderPath).toBe('/workspace/platform/multi')
+  })
+
   it('drops the saved note map when the last note is cleared', async () => {
     writeFolderWorkspaceProfile({
       workspaces: [folderWorkspaceRecord()],

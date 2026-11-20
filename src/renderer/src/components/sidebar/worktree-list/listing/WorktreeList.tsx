@@ -23,6 +23,7 @@ import {
   getProjectGroupHeaderKey,
   isProjectSectionGroupKey
 } from '../../../../../../shared/sidebar-list/sections/group-keys'
+import { composerDataForProjectGroup } from '../../../../../../shared/sidebar-list/multi-repo-system-group'
 import { selectWorktreeListReviewCacheInputs } from './review-cache-inputs'
 import type { VirtualizedScrollAnchor } from '@/lib/list-interaction/virtualized-scrolling/useVirtualizedScrollAnchor'
 import { SidebarWorktreeListDialogs } from '../rows/ProjectGroupDialogs'
@@ -239,12 +240,12 @@ const WorktreeList = React.memo(function WorktreeList({
       if (!projectGroup.parentPath) {
         return
       }
-      openModal('new-workspace-composer', {
-        initialProjectGroupId: projectGroup.id,
-        telemetrySource: 'sidebar'
-      })
+      openModal(
+        'new-workspace-composer',
+        composerDataForProjectGroup(projectGroup, folderWorkspaces)
+      )
     },
-    [openModal]
+    [folderWorkspaces, openModal]
   )
 
   useSidebarRevealRequests({

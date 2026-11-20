@@ -56,6 +56,7 @@ import { createStructuredSessionLaunchDirectorySlice } from '../slices/agent-sta
 import { createStructuredChatSleptAtSlice } from '../slices/agent-status/structured-sessions/structured-chat-slept-at'
 import { createStructuredChatCompanionWritesSlice } from '../slices/agent-status/structured-sessions/structured-chat-companion-writes'
 import { createWorkspaceAttentionSlice } from '../slices/workspace-attention/workspace-attention-slice'
+import { createMultiRepoWorkspaceSlice } from '../slices/multi-repo-workspace/multi-repo-workspace-slice'
 import { createEphemeralVmLifecycleSlice } from '../slices/ephemeral-vm/ephemeral-vm-lifecycle'
 import '@/i18n/i18n'
 import { withEditorBufferRecords } from '../slices/editor/buffers/editor-buffer-record-lifecycle'
@@ -128,6 +129,7 @@ export function createTestStore(
         ...createStructuredChatSleptAtSlice(...a),
         ...createStructuredChatCompanionWritesSlice(...a),
         ...createWorkspaceAttentionSlice(...a),
+        ...createMultiRepoWorkspaceSlice(...a),
         ...createEphemeralVmLifecycleSlice(...a)
       }),
       true

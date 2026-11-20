@@ -2,12 +2,11 @@ import type { Repo } from '../../../../shared/repository/repo-types'
 import { WorktreeCreateCollisionError } from '../../../../shared/new-workspace/worktree-create-collision'
 import type { getPRForBranch } from '../../../github/client/lookup/get-pr-for-branch'
 import {
-  computeWorktreePath,
-  ensurePathWithinWorkspace,
   sanitizeWorktreeName,
   sanitizeWorktreeBranchName,
   type getWorktreePathSettings
 } from '../../../ipc/worktrees/paths/worktree-logic'
+import { resolveCandidateWorktreePath } from '../../../ipc/worktree-placed-path'
 import { resolveWorktreeCreateDisplayNameRequest } from '../../../ipc/worktrees/creation/worktree-display-name'
 import {
   getBranchConflictKind,
@@ -46,6 +45,7 @@ import { assertNoPendingWorktreeRemovalConflict } from '../../../workspaces/remo
 import { isWorktreePathReserved } from '../../../workspaces/creation/reserved-worktree-path'
 import type { WorktreeCreatePathClaim } from '../../../workspaces/creation/worktree-create-in-flight'
 import type { RuntimeStore } from '../../construction/runtime-store-contract'
+import { PlacedWorktreePathOccupiedError } from '../../multi-repo-workspace/placed-worktree-path-occupied-error'
 import type { HostedReviewExecutionOptions } from '../../../source-control/hosted-review-git-options'
 import type { RemoteTrackingBase } from '../../repositories/runtime-remote-fetch-controller'
 import { resolveLegacyRemoteBranch } from './runtime-local-worktree-create-legacy-branch'
@@ -94,15 +94,13 @@ export async function resolveRuntimeLocalWorktreeCreateCandidate(args: {
         )
       : null
   const isRetiredName = retiredNameRegistry ? createRetiredNameLookup(retiredNameRegistry) : null
+  const placement = args.request.placement
   if (args.request.nameWasGenerated !== true || args.request.branchNameOverride) {
     assertNoPendingWorktreeRemovalConflict(args.repo.path, {
       worktreePath:
         args.request.nameWasGenerated === true
           ? undefined
-          : ensurePathWithinWorkspace(
-              computeWorktreePath(sanitizedName, args.repo.path, args.worktreePathSettings),
-              args.workspaceRoot
-            ),
+          : resolveCandidateWorktreePath(args, placement, sanitizedName),
       branch:
         args.request.branchNameOverride ||
         (await resolveCreateBranchName(
@@ -126,10 +124,7 @@ export async function resolveRuntimeLocalWorktreeCreateCandidate(args: {
     selectedReuseBranchName = branchName
   }
   const pathIsAvailable = async (): Promise<boolean> => {
-    worktreePath = ensurePathWithinWorkspace(
-      computeWorktreePath(effectiveSanitizedName, args.repo.path, args.worktreePathSettings),
-      args.workspaceRoot
-    )
+    worktreePath = resolveCandidateWorktreePath(args, placement, effectiveSanitizedName)
     // Orca owns the path until background removal settles, and while it is archived.
     return (
       !isWorktreePathReserved(args.store, args.repo, worktreePath) &&
@@ -137,7 +132,9 @@ export async function resolveRuntimeLocalWorktreeCreateCandidate(args: {
       args.pathClaim.claim(worktreePath)
     )
   }
-  for (let suffix = 1, attempts = 0; attempts < WORKTREE_CREATE_MAX_SUFFIX_ATTEMPTS; suffix += 1) {
+  // A placed member owns exactly one path and one branch; suffixed variants would drift from the persisted member.
+  const maxAttempts = placement ? 1 : WORKTREE_CREATE_MAX_SUFFIX_ATTEMPTS
+  for (let suffix = 1, attempts = 0; attempts < maxAttempts; suffix += 1) {
     if (exactName && suffix > 1) {
       throw exactNameTakenError(args.request.name)
     }
@@ -274,6 +271,9 @@ export async function resolveRuntimeLocalWorktreeCreateCandidate(args: {
       throw new WorktreeCreateCollisionError(
         `Branch "${branchName}" already exists ${branchConflictKind === 'local' ? 'locally' : 'on a remote'}.`
       )
+    }
+    if (placement) {
+      throw new PlacedWorktreePathOccupiedError(worktreePath)
     }
     throw new Error(
       `Could not find an available worktree path for "${sanitizedName}". Pick a different worktree name.`

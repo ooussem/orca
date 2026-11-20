@@ -10,6 +10,9 @@ import type { ProjectComboboxAddProjectMenu } from '../project-selection/Project
 import WorkspaceRunTargetCombobox from '../run-target/WorkspaceRunTargetCombobox'
 import { useTranslate } from '@/i18n/use-translate'
 import { cn } from '@/lib/class-names'
+import MultiProjectChips from '../MultiProjectChips'
+import MultiProjectPicker from '../MultiProjectPicker'
+import { getExecutionHostLabel } from '../../../../../shared/execution-host/execution-host'
 import { getSelectedNewWorkspaceProjectOptionId } from '@/lib/workspace/creation/new-workspace-project-options'
 import { resolveComposerAddProjectDefaultHostId } from '../project-selection/composer-add-project-default-host'
 import type { EphemeralVmRecipeOption } from '../run-target/run-target-options'
@@ -36,6 +39,7 @@ type NewWorkspaceComposerProjectSectionProps = Pick<
   | 'onEphemeralVmRecipeChange'
   | 'selectedEphemeralVmRecipeId'
   | 'ephemeralVmRecipeError'
+  | 'multiRepo'
 > & {
   disabled?: boolean
   projectDescriptionId: string
@@ -84,6 +88,7 @@ export function NewWorkspaceComposerProjectSection({
   handleConnectRunTargetHost,
   handleSetLocation,
   ephemeralVmRecipeError,
+  multiRepo,
   selectedRepoRequiresConnection,
   selectedRepoConnectionId,
   selectedRepoConnectInProgress,
@@ -93,6 +98,12 @@ export function NewWorkspaceComposerProjectSection({
   selectedProjectName
 }: NewWorkspaceComposerProjectSectionProps): React.JSX.Element {
   const t = useTranslate()
+  const hostChoiceCount = new Set((projectHostSetupOptions ?? []).map((option) => option.hostId))
+    .size
+  const showStaticWorkspaceHost = Boolean(
+    multiRepo?.active && multiRepo.hostId && (!shouldShowRunTargetPicker || hostChoiceCount <= 1)
+  )
+  const showHostColumn = shouldShowRunTargetPicker || showStaticWorkspaceHost
   const addProjectLabel = t('auto.components.NewWorkspaceComposerCard.d6b0a96f32', 'Add project')
   const defaultAddProjectHostId = useMemo(
     () =>
@@ -124,7 +135,7 @@ export function NewWorkspaceComposerProjectSection({
   )
   return (
     <fieldset disabled={disabled} className="space-y-1">
-      <div className={cn('grid gap-3', shouldShowRunTargetPicker && 'grid-cols-2')}>
+      <div className={cn('grid gap-3', showHostColumn && 'grid-cols-2')}>
         <div className="min-w-0 space-y-1">
           <div className="flex h-5 items-center justify-between gap-2">
             <label className="text-xs font-medium text-muted-foreground">
@@ -173,26 +184,79 @@ export function NewWorkspaceComposerProjectSection({
             ) : null}
           </div>
           <div className="space-y-1" data-contextual-tour-target="workspace-creation-project">
-            <ProjectCombobox
-              options={projectOptions}
-              value={getSelectedNewWorkspaceProjectOptionId(
-                projectOptions,
-                selectedProjectId,
-                selectedProjectHostSetupId,
-                selectedRepoExecutionHostId
-              )}
-              onValueChange={onProjectChange}
-              onValueSelected={focusNameInput}
-              onAddProject={comboboxAddProjectMenu ? undefined : onAddProject}
-              addProjectMenu={comboboxAddProjectMenu}
-              placeholder={
-                projectPlaceholder ??
-                t('auto.components.NewWorkspaceComposerCard.dccd26d4e4', 'Choose project')
-              }
-              triggerClassName="h-9 w-full border-input text-sm focus:border-ring focus:ring-[3px] focus:ring-ring/50"
-              invalid={Boolean(projectError)}
-              describedBy={projectDescriptionId}
-            />
+            {multiRepo?.active ? (
+              <MultiProjectChips
+                projects={multiRepo.selectedProjects}
+                resolutions={multiRepo.resolutions}
+                hostLabel={multiRepo.hostLabel}
+                onRemoveProject={multiRepo.removeProject}
+                onChooseSetup={multiRepo.chooseSetup}
+                disabled={multiRepo.creating}
+              />
+            ) : (
+              <ProjectCombobox
+                options={projectOptions}
+                value={getSelectedNewWorkspaceProjectOptionId(
+                  projectOptions,
+                  selectedProjectId,
+                  selectedProjectHostSetupId,
+                  selectedRepoExecutionHostId
+                )}
+                onValueChange={onProjectChange}
+                onValueSelected={focusNameInput}
+                onAddProject={comboboxAddProjectMenu ? undefined : onAddProject}
+                addProjectMenu={comboboxAddProjectMenu}
+                placeholder={
+                  projectPlaceholder ??
+                  t('auto.components.NewWorkspaceComposerCard.dccd26d4e4', 'Choose project')
+                }
+                triggerClassName="h-9 w-full border-input text-sm focus:border-ring focus:ring-[3px] focus:ring-ring/50"
+                invalid={Boolean(projectError)}
+                describedBy={projectDescriptionId}
+              />
+            )}
+            {multiRepo && multiRepo.hostId && selectedProjectId ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <MultiProjectPicker
+                  options={projectOptions}
+                  setups={multiRepo.setups}
+                  hostId={multiRepo.hostId}
+                  hostLabel={multiRepo.hostLabel}
+                  selectedProjectIds={multiRepo.selectedProjectIds}
+                  onToggleProject={multiRepo.toggleProject}
+                  onUseHost={multiRepo.useHost}
+                  canUseHost={multiRepo.canUseHost}
+                  getHostLabel={getExecutionHostLabel}
+                  onAddProject={onAddProject}
+                  disabled={multiRepo.supported === false || multiRepo.creating}
+                />
+                {multiRepo.supported === false ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    {t(
+                      'auto.components.newWorkspace.multiRepo.updateHost',
+                      'Update the host to create across repos'
+                    )}
+                  </span>
+                ) : null}
+                {multiRepo.sameAsLast && multiRepo.sameAsLastLabel ? (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="xs"
+                    onClick={() => {
+                      multiRepo.applySameAsLast()
+                      focusNameInput()
+                    }}
+                  >
+                    {t(
+                      'auto.components.newWorkspace.multiRepo.sameAsLast',
+                      'Same as last time: {{projects}}',
+                      { projects: multiRepo.sameAsLastLabel }
+                    )}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
             {projectError ? (
               <p id={projectDescriptionId} className="text-[11px] text-destructive">
                 {projectError}
@@ -208,10 +272,19 @@ export function NewWorkspaceComposerProjectSection({
             ) : null}
           </div>
         </div>
-        {shouldShowRunTargetPicker ? (
+        {showStaticWorkspaceHost && multiRepo ? (
           <div className="min-w-0 space-y-1">
+            <span className="flex h-5 min-w-0 items-center truncate text-xs font-medium text-muted-foreground">
+              {t('auto.components.newWorkspace.multiRepo.workspaceHost', 'Workspace host')}
+            </span>
+            <p className="text-sm text-foreground">{multiRepo.hostLabel}</p>
+          </div>
+        ) : shouldShowRunTargetPicker ? (
+          <div className="min-w-0 space-y-1" data-multi-repo-host-field="true">
             <label className="flex h-5 min-w-0 items-center truncate text-xs font-medium text-muted-foreground">
-              {t('auto.components.NewWorkspaceComposerCard.runOn', 'Run on')}
+              {multiRepo?.active
+                ? t('auto.components.newWorkspace.multiRepo.workspaceHost', 'Workspace host')
+                : t('auto.components.NewWorkspaceComposerCard.runOn', 'Run on')}
             </label>
             <WorkspaceRunTargetCombobox
               hostOptions={projectHostSetupOptions ?? []}

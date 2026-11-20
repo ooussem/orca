@@ -154,6 +154,7 @@ export class FolderWorkspacePersistenceOperations {
         | 'lastTerminalUseAt'
         | 'diffComments'
         | 'externalConversations'
+        | 'multiRepo'
       >
     > &
       WorkspaceAttachmentMutation
@@ -187,7 +188,8 @@ export class FolderWorkspacePersistenceOperations {
     if (updates.name !== undefined) {
       workspace.name = normalizeFolderWorkspaceName(updates.name, workspace.name)
     }
-    if (typeof updates.folderPath === 'string' && updates.folderPath.trim().length > 0) {
+    // Why: a multi-repo root is Orca-allocated and removed on delete; moving it strands members.
+    if (!workspace.multiRepo && updates.folderPath?.trim()) {
       const previous = workspace.folderPath
       workspace.folderPath = updates.folderPath
       if (previous !== workspace.folderPath) {
@@ -267,6 +269,9 @@ export class FolderWorkspacePersistenceOperations {
     }
     if (updates.externalConversations !== undefined) {
       workspace.externalConversations = updates.externalConversations
+    }
+    if (updates.multiRepo !== undefined) {
+      workspace.multiRepo = updates.multiRepo
     }
     workspace.updatedAt = Date.now()
     this.scheduleSave(['folderWorkspaces'])
