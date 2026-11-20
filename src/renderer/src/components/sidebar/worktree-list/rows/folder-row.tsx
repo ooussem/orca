@@ -25,6 +25,8 @@ import {
 import type { LineageToggleHandler } from '../../workspace-card/identity/worktree-lineage-toggle-handler-cache'
 import { getFolderWorkspaceCardPrDisplay } from '../../workspace-card/review/folder-workspace-card-pr-display'
 import { FolderPathStatusIndicator } from './FolderPathStatusIndicator'
+import MultiRepoRowBadge from '@/components/multi-repo/MultiRepoRowBadge'
+import MultiRepoAttentionRows from '@/components/multi-repo/MultiRepoAttentionRows'
 import type { WorktreeItemRowContext } from './item-row'
 import type { FolderWorkspaceItemRow } from '../listing/renderable-rows'
 import type { LineageRowFrame } from '../listing/lineage-row-projection'
@@ -181,10 +183,14 @@ export function renderFolderWorkspaceOption(args: {
               ctx.nativeLineageDropTargetIdentity === folderWorktreeIdentity)
           )}
         />
+        {row.folderWorkspace.multiRepo ? (
+          <MultiRepoAttentionRows folderWorkspace={row.folderWorkspace} />
+        ) : null}
         <div
-          className="pointer-events-auto absolute right-3 top-1.5"
+          className="pointer-events-auto absolute right-3 top-1.5 flex items-center gap-1.5"
           style={frame ? { right: frame.right + 12 } : undefined}
         >
+          <MultiRepoRowBadge folderWorkspace={row.folderWorkspace} />
           <FolderPathStatusIndicator status={pathStatus} />
         </div>
       </div>

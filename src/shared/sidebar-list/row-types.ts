@@ -40,6 +40,8 @@ export type GroupHeaderRow = {
   repo?: Repo
   projectGroup?: ProjectGroup | { id: null; name: 'Ungrouped'; tabOrder: number }
   projectGroupDepth?: number
+  /** Set on the host-created "Workspaces" group; its header offers no rename, delete or drag. */
+  multiRepoSystemGroup?: boolean
   hostId?: ExecutionHostId
   /** A project checked out on several hosts: each host's own registration, one header per host section. */
   hostRepos?: ReadonlyMap<ExecutionHostId, Repo>

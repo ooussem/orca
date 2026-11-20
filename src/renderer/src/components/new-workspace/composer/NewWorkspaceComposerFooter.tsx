@@ -17,8 +17,21 @@ type NewWorkspaceComposerFooterProps = Pick<
   | 'createDisabled'
   | 'creating'
   | 'primaryActionLabel'
+  | 'multiRepo'
+  | 'composerRef'
 > & {
   submitShortcutModifierLabel: string
+}
+
+/** Opens the host picker inside the multi-repo project section. */
+function useChooseMultiRepoHost(
+  composerRef: React.RefObject<HTMLDivElement | null> | undefined
+): () => void {
+  return React.useCallback((): void => {
+    composerRef?.current
+      ?.querySelector<HTMLElement>('[data-multi-repo-host-field="true"] button')
+      ?.click()
+  }, [composerRef])
 }
 
 export function NewWorkspaceComposerFooter({
@@ -30,24 +43,47 @@ export function NewWorkspaceComposerFooter({
   createDisabled,
   creating,
   primaryActionLabel,
+  multiRepo,
+  composerRef,
   submitShortcutModifierLabel
 }: NewWorkspaceComposerFooterProps): React.JSX.Element {
+  const chooseHost = useChooseMultiRepoHost(composerRef)
+  const multiActive = multiRepo?.active === true
+  const shownError = multiActive ? multiRepo.createError : createError
+  const shownCreating = multiActive ? multiRepo.creating : creating
+  const blockedReason = multiActive ? multiRepo.blockedReason : null
   const t = useTranslate()
   return (
     <>
-      {createError ? (
+      {multiActive && multiRepo.mixedHostsError ? (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+        >
+          <p>
+            {t(
+              'auto.components.newWorkspace.multiRepo.mixedHosts',
+              'Selected projects span more than one host. Pick a host to continue.'
+            )}
+          </p>
+          <Button type="button" variant="outline" size="xs" onClick={chooseHost}>
+            {t('auto.components.newWorkspace.multiRepo.chooseHost', 'Choose host')}
+          </Button>
+        </div>
+      ) : null}
+      {shownError ? (
         <div
           role="alert"
           className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
         >
-          {createError.help ? (
+          {shownError.help ? (
             <div className="space-y-1">
-              <p className="font-medium">{createError.title}</p>
-              <p>{createError.message}</p>
-              <p className="text-destructive/85">{createError.help}</p>
+              <p className="font-medium">{shownError.title}</p>
+              <p>{shownError.message}</p>
+              <p className="text-destructive/85">{shownError.help}</p>
             </div>
           ) : (
-            createError.message
+            shownError.message
           )}
         </div>
       ) : null}
@@ -55,10 +91,10 @@ export function NewWorkspaceComposerFooter({
       <div
         className={cn(
           'flex items-center gap-3',
-          showCreateMultiple ? 'justify-between' : 'justify-end'
+          showCreateMultiple && !multiActive ? 'justify-between' : 'justify-end'
         )}
       >
-        {showCreateMultiple ? (
+        {showCreateMultiple && !multiActive ? (
           <button
             type="button"
             role="switch"
@@ -72,6 +108,11 @@ export function NewWorkspaceComposerFooter({
             </span>
           </button>
         ) : null}
+        {blockedReason ? (
+          <span role="status" className="min-w-0 text-[11px] text-muted-foreground">
+            {blockedReason}
+          </span>
+        ) : null}
         <Button
           onClick={() => void onCreate()}
           disabled={createDisabled}
@@ -80,8 +121,10 @@ export function NewWorkspaceComposerFooter({
           // Why: the title already says what is created; the button keeps the full name for AT.
           aria-label={primaryActionLabel}
         >
-          {creating ? <LoaderCircle className="size-4 animate-spin" /> : null}
-          {t('auto.components.NewWorkspaceComposerFooter.create', 'Create')}
+          {shownCreating ? <LoaderCircle className="size-4 animate-spin" /> : null}
+          {multiActive
+            ? primaryActionLabel
+            : t('auto.components.NewWorkspaceComposerFooter.create', 'Create')}
           <ButtonKeyHint modifierLabel={submitShortcutModifierLabel} />
         </Button>
       </div>

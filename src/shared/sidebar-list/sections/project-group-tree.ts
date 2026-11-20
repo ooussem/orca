@@ -36,10 +36,14 @@ export function walkProjectGroupTree<V extends GroupedProjectEntry>(
     folderCountByGroupId: ReadonlyMap<string, number>
     projectOrderBy: ProjectOrderBy
     repoOrder: ReadonlyMap<string, number> | undefined
+    /** Groups that hold multi-repo workspaces; they list first among their siblings. */
+    systemGroupIds?: ReadonlySet<string>
   },
   visit: ProjectGroupTreeVisitor<V>
 ): void {
   const { entries, projectGroups, folderCountByGroupId, projectOrderBy, repoOrder } = args
+  const isSystemGroup = (group: ProjectGroup): boolean =>
+    args.systemGroupIds?.has(group.id) === true
 
   const groupByProjectGroupId = new Map<string | null, [string, V][]>()
   for (const entry of entries) {
@@ -80,6 +84,8 @@ export function walkProjectGroupTree<V extends GroupedProjectEntry>(
   for (const groups of childGroupsByParentId.values()) {
     groups.sort(
       (left, right) =>
+        // Cross-repo work is the high-frequency item: the Workspaces section takes the top slot.
+        Number(isSystemGroup(right)) - Number(isSystemGroup(left)) ||
         left.tabOrder - right.tabOrder ||
         compareSidebarText(left.name, right.name) ||
         compareCodePoints(left.executionHostId ?? '', right.executionHostId ?? '') ||
@@ -123,7 +129,14 @@ export function walkProjectGroupTree<V extends GroupedProjectEntry>(
     )
   ]
   if (projectOrderBy === 'manual') {
+    // The manual root order must not bury the Workspaces section that sorts first among siblings.
+    const systemRank = (entry: (typeof rootEntries)[number]): number =>
+      'projectGroup' in entry && isSystemGroup(entry.projectGroup) ? 0 : 1
     rootEntries.sort((left, right) => {
+      const rankDifference = systemRank(left) - systemRank(right)
+      if (rankDifference !== 0) {
+        return rankDifference
+      }
       const leftEntry =
         'projectGroup' in left
           ? { kind: 'group' as const, group: left.projectGroup }

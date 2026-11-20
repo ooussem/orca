@@ -111,6 +111,11 @@ import {
   setupScriptPromptShownSchema,
   workspaceCreateFailedSchema
 } from './schemas/telemetry-repository-event-schemas'
+import {
+  multiRepoMemberRetrySchema,
+  multiRepoWorkspaceCreatedSchema,
+  multiRepoWorkspaceRemovedSchema
+} from '../telemetry-multi-repo-workspace-event-schemas'
 import { pluginInstalledSchema } from './schemas/telemetry-plugin-event-schemas'
 import { browserExtensionsEventSchemas } from '../browser/extensions/browser-extensions-banner'
 import {
@@ -157,6 +162,9 @@ export const eventSchemas = {
   add_repo_nested_import_result: addRepoNestedImportResultSchema,
   workspace_created: workspaceCreatedSchema,
   workspace_create_failed: workspaceCreateFailedSchema,
+  multi_repo_workspace_created: multiRepoWorkspaceCreatedSchema,
+  multi_repo_workspace_removed: multiRepoWorkspaceRemovedSchema,
+  multi_repo_member_retry: multiRepoMemberRetrySchema,
   setup_script_prompt_shown: setupScriptPromptShownSchema,
   setup_script_prompt_action: setupScriptPromptActionSchema,
 

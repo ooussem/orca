@@ -33,6 +33,7 @@ import {
   shouldRevealWorktreeDeveloperMenu,
   shouldUseNativeContextMenu
 } from './worktree-context-menu-policy'
+import { RemoveFromWorkspaceMenuItem } from '@/components/multi-repo/MultiRepoMemberNotices'
 import { CLOSE_ALL_CONTEXT_MENUS_EVENT } from '@/lib/overlay-interaction/close-all-context-menus'
 import { WorktreeHandToBotMenuItem } from '@/components/bots/hand-to-bot/WorktreeHandToBotMenuItem'
 
@@ -222,6 +223,9 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
               <WslMovedWorkspaceUseHereMenuItem worktree={worktree} />
             </>
           )}
+          {!isMultiContext ? (
+            <RemoveFromWorkspaceMenuItem worktreeId={worktree.id} disabled={deletingContext} />
+          ) : null}
           {isMultiContext && hasAnyContextLineage ? (
             <>
               <DropdownMenuSeparator />
