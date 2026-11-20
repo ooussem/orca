@@ -3,6 +3,7 @@ import { DropdownMenuItem, DropdownMenuShortcut } from '@/components/ui/dropdown
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useOptionalShortcutLabel } from '@/lib/keyboard/useShortcutLabel'
 import { useTranslate } from '@/i18n/use-translate'
+import { useIsMultiRepoParent } from '@/components/sidebar/use-is-multi-repo-parent'
 import type { WorktreeContextMenuModel } from './use-worktree-context-menu-model'
 
 export function WorktreeContextMenuDeleteItems({ model }: { model: WorktreeContextMenuModel }) {
@@ -19,13 +20,16 @@ export function WorktreeContextMenuDeleteItems({ model }: { model: WorktreeConte
     removesProject,
     worktree
   } = model
+  const isMultiRepoParent = useIsMultiRepoParent(folderWorkspaceId)
   const projectMissing = !isMultiContext && worktree.isMainWorktree && !removesProject
   const label = contextDeletePending
     ? t('auto.components.sidebar.WorktreeContextMenu.b42391d8bf', 'Deleting…')
     : isMultiContext
       ? deleteLabel
       : folderWorkspaceId
-        ? t('auto.components.sidebar.WorktreeContextMenu.250de158fd', 'Remove Workspace')
+        ? isMultiRepoParent
+          ? t('auto.components.multiRepo.root.deleteWorkspace', 'Delete workspace')
+          : t('auto.components.sidebar.WorktreeContextMenu.250de158fd', 'Remove Workspace')
         : removesProject
           ? t('auto.components.sidebar.WorktreeContextMenu.f5ac91531d', 'Remove Project from Orca')
           : lineageDescendantCount > 0

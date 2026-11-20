@@ -2,6 +2,7 @@ import type { ExecutionHostId } from '../execution-host/execution-host'
 import type { TaskSourceContext } from '../work-items/task-source-context'
 import type { TuiAgent } from '../agent-launch/catalog/tui-agent'
 import type { DiffComment } from '../file-review/diff-comment-types'
+import type { MultiRepoWorkspace } from '../multi-repo-workspace'
 import type { SmartTier } from '../sidebar-list/sorting/sort-stamps'
 import type { OrcadRetainedMarker } from '../remote-runtime/orcad-lifecycle/orcad-retained-marker'
 import type { ExternalConversationLink } from '../connectors/external-conversation-link'
@@ -48,4 +49,6 @@ export type FolderWorkspace = {
   orcadRetained?: OrcadRetainedMarker
   /** See {@link WorktreeMeta.externalConversations}. */
   externalConversations?: ExternalConversationLink[]
+  /** Present only on multi-repo workspaces; absent means a plain folder workspace. */
+  multiRepo?: MultiRepoWorkspace
 }

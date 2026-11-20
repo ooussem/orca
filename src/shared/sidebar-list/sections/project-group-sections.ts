@@ -10,6 +10,7 @@ import type { OrderedGroupEntry } from './worktree-group-entry'
 import { appendWorktreeRows } from './row-builders'
 import { getFolderLaneSectionKey } from '../folders/folder-workspace-occurrences'
 import { walkProjectGroupTree } from './project-group-tree'
+import { getMultiRepoSystemGroupIds } from '../multi-repo-system-group'
 
 export function appendProjectGroupSections(
   ctx: SectionAppendContext,
@@ -28,13 +29,18 @@ export function appendProjectGroupSections(
     const groupId = pair.folderWorkspace.projectGroupId
     folderCountByGroupId.set(groupId, (folderCountByGroupId.get(groupId) ?? 0) + 1)
   }
+  const systemGroupIds = getMultiRepoSystemGroupIds(
+    args.projectGroups,
+    args.folderWorkspaces.map((pair) => pair.folderWorkspace)
+  )
   walkProjectGroupTree(
     {
       entries: args.orderedGroups,
       projectGroups: args.projectGroups,
       folderCountByGroupId,
       projectOrderBy: args.projectOrderBy,
-      repoOrder: args.repoOrder
+      repoOrder: args.repoOrder,
+      systemGroupIds
     },
     {
       group: (projectGroup, depth, count) => {
@@ -46,7 +52,8 @@ export function appendProjectGroupSections(
           count,
           icon: { kind: 'project' },
           projectGroup,
-          projectGroupDepth: depth
+          projectGroupDepth: depth,
+          ...(systemGroupIds.has(projectGroup.id) ? { multiRepoSystemGroup: true } : {})
         })
         if (collapsedGroups.has(key)) {
           return false

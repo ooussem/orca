@@ -63,6 +63,7 @@ import { createStructuredChatCompanionWritesSlice } from './slices/agent-status/
 import { createEphemeralVmLifecycleSlice } from './slices/ephemeral-vm/ephemeral-vm-lifecycle'
 import { createWorkspaceAttentionSlice } from './slices/workspace-attention/workspace-attention-slice'
 import { e2eConfig } from '@/app-shell/startup/e2e-config'
+import { createMultiRepoWorkspaceSlice } from './slices/multi-repo-workspace/multi-repo-workspace-slice'
 import type { createWebRuntimeSessionTerminal } from '@/runtime/hosted-terminals/creation/web-runtime-terminal-creation'
 import {
   registerHttpLinkStoreAccessor,
@@ -164,6 +165,7 @@ export const useAppStore = create<AppState>()(
               ...createStructuredChatSleptAtSlice(...a),
               ...createStructuredChatCompanionWritesSlice(...a),
               ...createWorkspaceAttentionSlice(...a),
+              ...createMultiRepoWorkspaceSlice(...a),
               ...createEphemeralVmLifecycleSlice(...a)
             }
           })

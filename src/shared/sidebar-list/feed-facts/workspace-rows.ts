@@ -29,6 +29,12 @@ import { folderLineageEdgeOf } from '../../worktree/lineage/folder-lineage-paren
 import { isCrossStoreWorkspaceLineage } from '../../worktree/lineage/cross-store-lineage-records'
 import type { Worktree } from '../../worktree/types'
 import { getWorkspaceRowKindFacts } from '../../worktree/visibility/workspace-kinds'
+import {
+  indexMultiRepoMembersByWorktreeId,
+  MultiRepoMemberRefSchema,
+  MultiRepoRowSummarySchema,
+  toMultiRepoRowSummary
+} from './multi-repo-row-facts'
 import { SMART_TIERS } from '../sorting/sort-stamps'
 
 /** A row's parent in another Orca store; a missing or unreadable record leaves the row standalone. */
@@ -105,6 +111,10 @@ export const WorkspaceRowSchema = z.object({
   detachedHead: z.literal(true).optional(),
   /** Main-owned terminal platform. */
   terminalPlatform: z.string().optional(),
+  /** Folder rows of a multi-repo workspace; absent on plain folder workspaces and old hosts. */
+  multiRepo: MultiRepoRowSummarySchema.optional(),
+  /** Git rows that are a member of a multi-repo workspace; absent on old hosts. */
+  multiRepoMember: MultiRepoMemberRefSchema.optional(),
   /** Host-owned sort stamps (sort-stamps.ts); old hosts omit tiers. */
   recentAt: z.number().optional(),
   smartTier: z.enum(SMART_TIERS).optional(),
@@ -127,7 +137,8 @@ function toWorkspaceRow(
   repo: Repo | undefined,
   lineage: WorktreeLineage | undefined,
   crossStoreParent?: unknown,
-  workspaceLineage?: WorkspaceLineageEdge | null
+  workspaceLineage?: WorkspaceLineageEdge | null,
+  multiRepo?: Pick<WorkspaceRow, 'multiRepo' | 'multiRepoMember'>
 ): WorkspaceRow {
   const kindFacts = getWorkspaceRowKindFacts(worktree, repo)
   return {
@@ -168,6 +179,7 @@ function toWorkspaceRow(
     linkedGitLabIssue: worktree.linkedGitLabIssue ?? null,
     linkedItems: getWorkspaceAttachments(worktree),
     ...kindFacts,
+    ...multiRepo,
     defaultBranch: kindFacts.defaultBranch ?? false,
     recentAt: worktree.lastActivityAt,
     ...(worktree.smartTier !== undefined
@@ -243,7 +255,8 @@ export function buildWorkspaceRows(catalog: {
     worktree: Worktree,
     kind: WorkspaceRow['kind'],
     repo?: Repo,
-    lineage?: WorktreeLineage
+    lineage?: WorktreeLineage,
+    multiRepo?: Pick<WorkspaceRow, 'multiRepo' | 'multiRepoMember'>
   ): void => {
     const listed = listedRow(worktree, repo)
     if (listed) {
@@ -267,16 +280,32 @@ export function buildWorkspaceRows(catalog: {
           repo,
           lineage,
           crossStoreParent,
-          workspaceLineage
+          workspaceLineage,
+          multiRepo
         )
       )
     }
   }
+  const memberByWorktreeId = indexMultiRepoMembersByWorktreeId(catalog.folderWorkspaces)
   for (const { worktree, repo } of withOwnerRepos(catalog.worktrees, catalog.repos)) {
-    add(worktree, 'git', repo, catalog.lineageById[worktree.id])
+    const member = memberByWorktreeId.get(worktree.id)
+    add(
+      worktree,
+      'git',
+      repo,
+      catalog.lineageById[worktree.id],
+      member && { multiRepoMember: member }
+    )
   }
   for (const folderWorkspace of catalog.folderWorkspaces) {
-    add(folderWorkspaceToWorktree(folderWorkspace), 'folder')
+    const multiRepo = folderWorkspace.multiRepo
+    add(
+      folderWorkspaceToWorktree(folderWorkspace),
+      'folder',
+      undefined,
+      undefined,
+      multiRepo && { multiRepo: toMultiRepoRowSummary(multiRepo) }
+    )
   }
   return rows
 }
