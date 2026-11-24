@@ -11,7 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
 import { cn } from '@/lib/class-names'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import type { ProjectHostSetup } from '../../../../shared/project/project-types'
 import type { NewWorkspaceProjectOption } from '@/lib/workspace/creation/new-workspace-project-options'
@@ -61,6 +61,7 @@ export default function MultiProjectPicker({
   triggerRef,
   disabled = false
 }: MultiProjectPickerProps): React.JSX.Element {
+  const t = useTranslate()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const reasonIdPrefix = useId()
@@ -127,7 +128,7 @@ export default function MultiProjectPicker({
                       }
                     }}
                   >
-                    {translate('auto.components.newWorkspace.multiRepo.useHost', 'Use {{host}}', {
+                    {t('auto.components.newWorkspace.multiRepo.useHost', 'Use {{host}}', {
                       host: getHostLabel(row.alternativeHostId)
                     })}
                   </button>
@@ -161,7 +162,7 @@ export default function MultiProjectPicker({
           aria-expanded={open}
         >
           <FolderPlus className="size-3" />
-          {translate('auto.components.NewWorkspaceComposerCard.d6b0a96f32', 'Add project')}
+          {t('auto.components.NewWorkspaceComposerCard.d6b0a96f32', 'Add project')}
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -175,7 +176,7 @@ export default function MultiProjectPicker({
             autoFocus
             value={query}
             onValueChange={setQuery}
-            placeholder={translate(
+            placeholder={t(
               'auto.components.ui.repo.multi.combobox.a58a0cd100',
               'Search projects...'
             )}
@@ -184,18 +185,18 @@ export default function MultiProjectPicker({
             {!hasProjects ? (
               <div className="space-y-2 px-3 py-3 text-xs text-muted-foreground">
                 <p>
-                  {translate(
+                  {t(
                     'auto.components.newWorkspace.multiRepo.addAnotherGitProject',
                     'Add another git project to create a workspace across repos.'
                   )}
                 </p>
                 <Button type="button" variant="link" size="xs" onClick={onAddProject}>
-                  {translate('auto.components.NewWorkspaceComposerCard.d6b0a96f32', 'Add project')}
+                  {t('auto.components.NewWorkspaceComposerCard.d6b0a96f32', 'Add project')}
                 </Button>
               </div>
             ) : available.length + unavailable.length === 0 ? (
               <CommandEmpty>
-                {translate(
+                {t(
                   'auto.components.ui.repo.multi.combobox.4471d4a1c0',
                   'No projects match your search.'
                 )}
@@ -209,7 +210,7 @@ export default function MultiProjectPicker({
                       role="separator"
                       className="border-t border-border px-3 pb-0.5 pt-1.5 text-[10px] font-medium text-muted-foreground"
                     >
-                      {translate(
+                      {t(
                         'auto.components.newWorkspace.multiRepo.unavailableOnHost',
                         'Unavailable on this host'
                       )}

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { useAppStore } from '@/store'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import { RemovalUnsavedFilesNotice } from '@/components/sidebar/workspace-actions/deletion/RemovalUnsavedFilesNotice'
 import { collectRemovalUnsavedFiles } from '@/components/editor/save/flush/removal-unsaved-editor-files'
@@ -67,10 +67,10 @@ function RowIcon({ row }: { row: DeleteRow }): React.JSX.Element {
 }
 
 export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | null {
+  const t = useTranslate()
   const modalData = useAppStore((state) => state.modalData)
   const closeModal = useAppStore((state) => state.closeModal)
   const folderWorkspaces = useAppStore((state) => selectFolderWorkspaces(state))
-  const repos = useAppStore((state) => state.repos)
   const inspect = useAppStore((state) => state.inspectMultiRepoWorkspaceDelete)
   const deleteWorkspace = useAppStore((state) => state.deleteMultiRepoWorkspace)
 
@@ -102,8 +102,15 @@ export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | nu
         if (cancelled) {
           return
         }
+        // Why: labels are read when the inspection lands, not subscribed to, so the effect
+        // stays a one-shot read per opened workspace.
+        const state = useAppStore.getState()
+        const members =
+          selectFolderWorkspaces(state).find((workspace) => workspace.id === folderWorkspaceId)
+            ?.multiRepo?.members ?? []
+        const { repos } = state
         const labels = new Map(
-          (folderWorkspace?.multiRepo?.members ?? []).map((member) => [
+          members.map((member) => [
             member.memberId,
             {
               label: repos.find((repo) => repo.id === member.repoId)?.displayName ?? member.dirName,
@@ -124,9 +131,7 @@ export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | nu
     return () => {
       cancelled = true
     }
-    // The inspection is a one-shot read of the workspace as it was when the dialog opened.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [folderWorkspaceId, executionHostId])
+  }, [folderWorkspaceId, executionHostId, inspect])
 
   // Targets whose open files this delete closes: the workspace folder and every member worktree.
   const unsavedTargets = React.useMemo<WorktreePurgeTarget[]>(
@@ -180,9 +185,10 @@ export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | nu
         rows: load.rows.map((row) => (row.phase === 'removed' ? row : { ...row, phase: 'idle' }))
       })
       setError(reason instanceof Error ? reason.message : String(reason))
-    } finally {
-      setDeleting(false)
     }
+    // Why: the catch never rethrows, so this runs on every path; React Compiler does not
+    // compile a component holding try/finally.
+    setDeleting(false)
   }
 
   if (!folderWorkspaceId) {
@@ -231,7 +237,7 @@ export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | nu
           <ul className="max-h-72 space-y-1 overflow-y-auto scrollbar-sleek">
             {checking ? (
               <li className="text-xs text-muted-foreground">
-                {translate('auto.components.multiRepo.delete.checking', 'Checking…')}
+                {t('auto.components.multiRepo.delete.checking', 'Checking…')}
               </li>
             ) : null}
             {rows.map((row) => {
@@ -286,8 +292,8 @@ export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | nu
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={deleting}>
             {retryPhase
-              ? translate('auto.components.multiRepo.delete.close', 'Close')
-              : translate('auto.components.multiRepo.delete.cancel', 'Cancel')}
+              ? t('auto.components.multiRepo.delete.close', 'Close')
+              : t('auto.components.multiRepo.delete.cancel', 'Cancel')}
           </Button>
           <Button
             ref={confirmRef}

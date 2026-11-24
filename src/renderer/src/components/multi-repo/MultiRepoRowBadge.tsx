@@ -1,10 +1,12 @@
 import React from 'react'
 import { FolderTree } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
+import { pickMemberGitStatus } from './member-git-status'
 import { buildRootPanelModel } from './root-panel-model'
 import { getRootPanelHeaderText } from './root-panel-copy'
 
@@ -18,9 +20,12 @@ export default function MultiRepoRowBadge({
 }: {
   folderWorkspace: FolderWorkspace
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const repos = useAppStore((state) => state.repos)
   const worktreesByRepo = useAppStore((state) => selectWorktreesByRepo(state))
-  const gitStatusByWorktree = useAppStore((state) => state.gitStatusByWorktree)
+  const gitStatusByWorktree = useAppStore(
+    useShallow((state) => pickMemberGitStatus(state.gitStatusByWorktree, [folderWorkspace]))
+  )
   const model = React.useMemo(
     () => buildRootPanelModel({ folderWorkspace, repos, worktreesByRepo, gitStatusByWorktree }),
     [folderWorkspace, repos, worktreesByRepo, gitStatusByWorktree]
@@ -35,7 +40,7 @@ export default function MultiRepoRowBadge({
     <span className="inline-flex items-center gap-1.5">
       {summary.changed > 0 ? (
         <span className="text-[11px] text-muted-foreground">
-          {translate('auto.components.multiRepo.strip.changed', '{{count}} changed', {
+          {t('auto.components.multiRepo.strip.changed', '{{count}} changed', {
             count: summary.changed,
             defaultValue_one: '{{count}} changed'
           })}

@@ -1,13 +1,13 @@
 import React from 'react'
 import { AlertTriangle, CircleDashed, LoaderCircle, RotateCw } from 'lucide-react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
 import { buildRootPanelModel, type RootPanelRow } from './root-panel-model'
+import { runPendingMemberAction } from './run-pending-member-action'
 import { getRootPanelStatusDetail, getRootPanelStatusText } from './root-panel-copy'
 
 const ATTENTION_KINDS = new Set(['queued', 'creating', 'failed', 'interrupted'])
@@ -38,6 +38,7 @@ export default function MultiRepoAttentionRows({
 }: {
   folderWorkspace: FolderWorkspace
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const repos = useAppStore((state) => state.repos)
   const worktreesByRepo = useAppStore((state) => selectWorktreesByRepo(state))
   const runMemberAction = useAppStore((state) => state.runMultiRepoMemberAction)
@@ -51,24 +52,14 @@ export default function MultiRepoAttentionRows({
     return null
   }
   const executionHostId = resolveMultiRepoExecutionHostId(folderWorkspace)
-  const retry = async (memberId: string): Promise<void> => {
-    setPending((current) => new Set(current).add(memberId))
-    try {
-      await runMemberAction('retryMember', {
+  const retry = (memberId: string): Promise<void> =>
+    runPendingMemberAction(memberId, setPending, () =>
+      runMemberAction('retryMember', {
         folderWorkspaceId: folderWorkspace.id,
         memberId,
         ...(executionHostId ? { executionHostId } : {})
       })
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
-    } finally {
-      setPending((current) => {
-        const next = new Set(current)
-        next.delete(memberId)
-        return next
-      })
-    }
-  }
+    )
   return (
     <ul className="space-y-0.5 pb-1 pl-9 pr-3" data-multi-repo-attention="">
       {rows.map((row) => (
@@ -88,7 +79,7 @@ export default function MultiRepoAttentionRows({
               size="xs"
               className="ml-auto"
               disabled={pending.has(row.memberId)}
-              aria-label={translate('auto.components.multiRepo.root.retryRepo', 'Retry {{repo}}', {
+              aria-label={t('auto.components.multiRepo.root.retryRepo', 'Retry {{repo}}', {
                 repo: row.label
               })}
               onClick={(event) => {
@@ -99,7 +90,7 @@ export default function MultiRepoAttentionRows({
               onPointerDown={(event) => event.stopPropagation()}
             >
               <RotateCw />
-              {translate('auto.components.multiRepo.root.retry', 'Retry')}
+              {t('auto.components.multiRepo.root.retry', 'Retry')}
             </Button>
           ) : null}
         </li>

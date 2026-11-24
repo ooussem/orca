@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '@/store'
 import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
 import { findMultiRepoMemberByWorktreeId } from '@/store/slices/multi-repo-workspace/multi-repo-workspace-selectors'
@@ -28,6 +28,7 @@ export function MultiRepoMemberDeleteNote({
 }: {
   worktreeId: string
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const found = useMemberOf(worktreeId)
   const repos = useAppStore((state) => state.repos)
   const multiRepo = found?.workspace.multiRepo
@@ -39,7 +40,7 @@ export function MultiRepoMemberDeleteNote({
   const keeps = multiRepo.members.filter((member) => member.memberId !== found.member.memberId)
   return (
     <p className="text-xs text-muted-foreground">
-      {translate(
+      {t(
         'auto.components.multiRepo.memberDelete.keeps',
         'Only deletes {{name}}. The workspace keeps {{count}} repos.',
         {
@@ -60,6 +61,7 @@ export function RemoveFromWorkspaceMenuItem({
   worktreeId: string
   disabled?: boolean
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const found = useMemberOf(worktreeId)
   const runMemberAction = useAppStore((state) => state.runMultiRepoMemberAction)
   const repos = useAppStore((state) => state.repos)
@@ -78,17 +80,13 @@ export function RemoveFromWorkspaceMenuItem({
     void runMemberAction('detachMember', args)
       .then(() => {
         toast(
-          translate(
-            'auto.components.multiRepo.removeFromWorkspace.done',
-            '{{name}} left {{workspace}}',
-            {
-              name,
-              workspace: workspace.name
-            }
-          ),
+          t('auto.components.multiRepo.removeFromWorkspace.done', '{{name}} left {{workspace}}', {
+            name,
+            workspace: workspace.name
+          }),
           {
             action: {
-              label: translate('auto.components.multiRepo.removeFromWorkspace.undo', 'Undo'),
+              label: t('auto.components.multiRepo.removeFromWorkspace.undo', 'Undo'),
               onClick: () => {
                 void runMemberAction('attachMember', args).catch((error: unknown) =>
                   toast.error(error instanceof Error ? error.message : String(error))
@@ -105,7 +103,7 @@ export function RemoveFromWorkspaceMenuItem({
   return (
     <DropdownMenuItem onSelect={handleSelect} disabled={disabled}>
       <Unlink className="size-3.5" />
-      {translate('auto.components.multiRepo.root.removeFromWorkspace', 'Remove from workspace')}
+      {t('auto.components.multiRepo.root.removeFromWorkspace', 'Remove from workspace')}
     </DropdownMenuItem>
   )
 }

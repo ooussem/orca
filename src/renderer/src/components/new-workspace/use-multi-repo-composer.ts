@@ -217,13 +217,12 @@ export function useMultiRepoComposer({
         ...(quickAgent ? { createdWithAgent: quickAgent } : {})
       })
       saveLastMultiRepoSet(recordCreateInLastSet(lastSet, selectedProjectIds))
-      if (isSubmissionCancelled?.()) {
-        return
+      if (!isSubmissionCancelled?.()) {
+        activateAndRevealWorkspace(folderWorkspaceKey(folderWorkspace.id), {
+          navigationIntent: 'user-open'
+        })
+        onCreated()
       }
-      activateAndRevealWorkspace(folderWorkspaceKey(folderWorkspace.id), {
-        navigationIntent: 'user-open'
-      })
-      onCreated()
     } catch (error) {
       const parsed = parseMultiRepoWorkspaceError(error) ?? error
       if (parsed instanceof MultiRepoWorkspaceError && parsed.code === 'multi_repo_mixed_hosts') {
@@ -237,10 +236,11 @@ export function useMultiRepoComposer({
           message: error instanceof Error ? error.message : String(error)
         })
       }
-    } finally {
-      submittingRef.current = false
-      setCreating(false)
     }
+    // Why: the catch never rethrows, so this runs on every path; React Compiler does not
+    // compile a hook holding try/finally.
+    submittingRef.current = false
+    setCreating(false)
   }, [
     active,
     blockedCount,

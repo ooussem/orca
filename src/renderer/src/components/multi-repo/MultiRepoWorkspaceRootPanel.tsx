@@ -1,16 +1,18 @@
 import React from 'react'
 import { AlertTriangle, Check, CircleDashed, FolderX, LoaderCircle, RotateCw } from 'lucide-react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
 import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { activateWorkspaceRepoEntry } from '@/lib/multi-repo-workspace-repo-navigation'
 import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import { deleteFolderWorkspaceUnlessUnsaved } from '@/components/sidebar/workspace-actions/deletion/folder-workspace-delete'
 import type { MultiRepoMemberAction } from '@/store/slices/multi-repo-workspace/multi-repo-workspace-contract'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
+import { pickMemberGitStatus } from './member-git-status'
 import { buildRootPanelModel, type RootPanelRow, type RootPanelRowStatus } from './root-panel-model'
+import { runPendingMemberAction } from './run-pending-member-action'
 import {
   getNotCreatedNote,
   getRootPanelHeaderText,
@@ -46,9 +48,12 @@ export default function MultiRepoWorkspaceRootPanel({
 }: {
   folderWorkspace: FolderWorkspace
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const repos = useAppStore((state) => state.repos)
   const worktreesByRepo = useAppStore((state) => selectWorktreesByRepo(state))
-  const gitStatusByWorktree = useAppStore((state) => state.gitStatusByWorktree)
+  const gitStatusByWorktree = useAppStore(
+    useShallow((state) => pickMemberGitStatus(state.gitStatusByWorktree, [folderWorkspace]))
+  )
   const runMemberAction = useAppStore((state) => state.runMultiRepoMemberAction)
   const [pendingMemberIds, setPendingMemberIds] = React.useState<ReadonlySet<string>>(new Set())
 
@@ -59,24 +64,14 @@ export default function MultiRepoWorkspaceRootPanel({
   const executionHostId = resolveMultiRepoExecutionHostId(folderWorkspace)
 
   const runAction = React.useCallback(
-    async (action: MultiRepoMemberAction, memberId: string): Promise<void> => {
-      setPendingMemberIds((current) => new Set(current).add(memberId))
-      try {
-        await runMemberAction(action, {
+    (action: MultiRepoMemberAction, memberId: string): Promise<void> =>
+      runPendingMemberAction(memberId, setPendingMemberIds, () =>
+        runMemberAction(action, {
           folderWorkspaceId: folderWorkspace.id,
           memberId,
           ...(executionHostId ? { executionHostId } : {})
         })
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : String(error))
-      } finally {
-        setPendingMemberIds((current) => {
-          const next = new Set(current)
-          next.delete(memberId)
-          return next
-        })
-      }
-    },
+      ),
     [executionHostId, folderWorkspace.id, runMemberAction]
   )
 
@@ -106,7 +101,7 @@ export default function MultiRepoWorkspaceRootPanel({
       {model.rows.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
           <div className="text-sm font-medium text-foreground">
-            {translate('auto.components.multiRepo.root.emptyTitle', 'No repos in this workspace')}
+            {t('auto.components.multiRepo.root.emptyTitle', 'No repos in this workspace')}
           </div>
           <Button
             type="button"
@@ -121,7 +116,7 @@ export default function MultiRepoWorkspaceRootPanel({
               )
             }
           >
-            {translate('auto.components.multiRepo.root.deleteWorkspace', 'Delete workspace')}
+            {t('auto.components.multiRepo.root.deleteWorkspace', 'Delete workspace')}
           </Button>
         </div>
       ) : (
@@ -135,7 +130,7 @@ export default function MultiRepoWorkspaceRootPanel({
             <div className="px-4 pb-2">
               <Button type="button" variant="outline" size="xs" onClick={retryAll}>
                 <RotateCw />
-                {translate('auto.components.multiRepo.root.retryAll', 'Retry all')}
+                {t('auto.components.multiRepo.root.retryAll', 'Retry all')}
               </Button>
             </div>
           ) : null}
@@ -172,6 +167,7 @@ function RootPanelRowItem({
   onRetry: () => void
   onRemove: () => void
 }): React.JSX.Element {
+  const t = useTranslate()
   const statusText = getRootPanelStatusText(row.status)
   const statusDetail = getRootPanelStatusDetail(row.status)
   const content = (
@@ -199,7 +195,7 @@ function RootPanelRowItem({
           variant="ghost"
           size="sm"
           className="min-w-0 flex-1 justify-start"
-          aria-label={translate('auto.components.multiRepo.root.open', 'Open {{repo}}', {
+          aria-label={t('auto.components.multiRepo.root.open', 'Open {{repo}}', {
             repo: row.label
           })}
           onClick={onOpen}
@@ -212,12 +208,12 @@ function RootPanelRowItem({
       {row.canRetry ? (
         <Button type="button" variant="ghost" size="xs" disabled={pending} onClick={onRetry}>
           {pending ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : null}
-          {translate('auto.components.multiRepo.root.retry', 'Retry')}
+          {t('auto.components.multiRepo.root.retry', 'Retry')}
         </Button>
       ) : null}
       {row.canRemove ? (
         <Button type="button" variant="ghost" size="xs" disabled={pending} onClick={onRemove}>
-          {translate('auto.components.multiRepo.root.removeFromWorkspace', 'Remove from workspace')}
+          {t('auto.components.multiRepo.root.removeFromWorkspace', 'Remove from workspace')}
         </Button>
       ) : null}
     </li>

@@ -1,17 +1,22 @@
 import React from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { activateWorkspaceRepoEntry } from '@/lib/multi-repo-workspace-repo-navigation'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
+import { pickMemberGitStatus } from './member-git-status'
 import { buildWorkspaceRepoStripModel } from './workspace-repo-strip-model'
 
 /** One-click repo switching for the active multi-repo workspace; renders nothing anywhere else. */
 export default function WorkspaceRepoStrip(): React.JSX.Element | null {
+  const t = useTranslate()
   const activeWorktreeId = useAppStore((state) => state.activeWorktreeId)
   const folderWorkspaces = useAppStore((state) => selectFolderWorkspaces(state))
   const repos = useAppStore((state) => state.repos)
-  const gitStatusByWorktree = useAppStore((state) => state.gitStatusByWorktree)
+  const gitStatusByWorktree = useAppStore(
+    useShallow((state) => pickMemberGitStatus(state.gitStatusByWorktree, folderWorkspaces))
+  )
   const model = React.useMemo(
     () =>
       buildWorkspaceRepoStripModel({
@@ -28,7 +33,7 @@ export default function WorkspaceRepoStrip(): React.JSX.Element | null {
   const { folderWorkspace, entries } = model
   return (
     <nav
-      aria-label={translate('auto.components.multiRepo.strip.label', 'Repos in {{name}}', {
+      aria-label={t('auto.components.multiRepo.strip.label', 'Repos in {{name}}', {
         name: folderWorkspace.name
       })}
       className="flex h-9 shrink-0 items-center gap-1.5 border-b border-border px-3"
@@ -46,12 +51,10 @@ export default function WorkspaceRepoStrip(): React.JSX.Element | null {
               aria-current={entry.active ? 'page' : undefined}
               onClick={() => activateWorkspaceRepoEntry(entry.key, folderWorkspace)}
             >
-              {entry.kind === 'all'
-                ? translate('auto.components.multiRepo.strip.all', 'All')
-                : entry.label}
+              {entry.kind === 'all' ? t('auto.components.multiRepo.strip.all', 'All') : entry.label}
               {entry.changedCount !== null && entry.changedCount > 0 ? (
                 <span className="text-muted-foreground">
-                  {translate('auto.components.multiRepo.strip.changed', '{{count}} changed', {
+                  {t('auto.components.multiRepo.strip.changed', '{{count}} changed', {
                     count: entry.changedCount,
                     defaultValue_one: '{{count}} changed'
                   })}

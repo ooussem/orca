@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { normalizeFolderWorkspaces } from './folder-workspaces'
 import type { ProjectGroup } from '../project/groups/project-group-types'
 
-const folderGroup = {
+const folderGroup: ProjectGroup = {
   id: 'group-1',
   name: 'Projects',
   parentPath: '/tmp/projects',
-  connectionId: null
-} as unknown as ProjectGroup
+  connectionId: null,
+  parentGroupId: null,
+  createdFrom: 'manual',
+  tabOrder: 0,
+  isCollapsed: false,
+  color: null,
+  createdAt: 0,
+  updatedAt: 0
+}
 
 describe('normalizeFolderWorkspaces multi-repo salvage', () => {
   const worktreeId = 'repo-a::/tmp/projects/ws/api'

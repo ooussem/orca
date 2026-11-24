@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { SelectedProjectResolution } from './resolve-project-setup-for-host'
 import { getMultiRepoUnavailableCopy } from './multi-repo-composer-copy'
 
@@ -43,6 +44,7 @@ export default function MultiProjectChips({
   onChooseSetup,
   disabled = false
 }: MultiProjectChipsProps): React.JSX.Element {
+  const t = useTranslate()
   const byProject = new Map(resolutions.map((entry) => [entry.projectId, entry.resolution]))
   return (
     <ul className="flex flex-wrap items-center gap-1.5" aria-label={projectsLabel()}>
@@ -68,7 +70,7 @@ export default function MultiProjectChips({
                       type="button"
                       disabled={disabled}
                       title={resolution.setup.path}
-                      aria-label={translate(
+                      aria-label={t(
                         'auto.components.newWorkspace.multiRepo.chooseSetup',
                         'Choose the setup for {{project}}',
                         { project: project.displayName }
@@ -99,7 +101,7 @@ export default function MultiProjectChips({
                 size="icon-xs"
                 disabled={disabled}
                 onClick={() => onRemoveProject(project.projectId)}
-                aria-label={translate(
+                aria-label={t(
                   'auto.components.newWorkspace.multiRepo.removeProject',
                   'Remove {{project}}',
                   { project: project.displayName }
