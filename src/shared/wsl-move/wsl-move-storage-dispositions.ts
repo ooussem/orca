@@ -1,6 +1,8 @@
 import { moveDisposition, notApplicableDisposition } from './wsl-move-dispositions'
 import type { WslMoveFieldDisposition } from './wsl-move-dispositions'
 
+const GLOBAL_PREFERENCE = notApplicableDisposition(62, 'Global preference or web-client storage.')
+
 /** Census tests require a disposition for each renderer module using localStorage. */
 export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDisposition> = {
   'src/renderer/src/lib/files/search/quick-open-file-history.ts': {
@@ -67,6 +69,7 @@ export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDispo
       'src/renderer/src/components/onboarding/landing/landing-preflight-dismissal.ts',
       'src/renderer/src/components/task-page/linear/filters/linear-issue-view-storage.ts',
       'src/renderer/src/components/native-chat/surfaces/integration/NativeChatStructuredSession.test-harness.tsx',
+      'src/renderer/src/components/new-workspace/multi-repo-last-set-storage.ts',
       'src/renderer/src/components/onboarding/onboarding-feature-setup.ts',
       'src/renderer/src/components/pet/PetOverlay.tsx',
       'src/renderer/src/components/right-sidebar/ai-vault/scope/ai-vault-view-options-persistence.ts',
@@ -97,10 +100,7 @@ export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDispo
       'src/renderer/src/web/runtime/security/web-runtime-credential-source.ts',
       'src/renderer/src/web/pairing/web-runtime-environment.ts',
       'src/shared/settings/default-global-settings.ts'
-    ].map((path) => [
-      path,
-      notApplicableDisposition(62, 'Global preference or web-client storage.')
-    ])
+    ].map((path) => [path, GLOBAL_PREFERENCE])
   )
 }
 

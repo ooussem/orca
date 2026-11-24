@@ -4,6 +4,7 @@ import type { BrowserTabCreateRequest } from '../../../shared/browser/workspaces
 import { ipcRenderer } from 'electron'
 import type { PersistedUIState } from '../../../shared/orca-profiles/persisted-ui-state-types'
 import type { KeybindingActionId } from '../../../shared/keybindings/types'
+import type { WorkspaceRepoSelection } from '../../../shared/keybindings/window-shortcut-policy'
 import type { PreloadApi } from '../../api-types'
 import type {
   RemoteCliBrowserScopeQuery,
@@ -158,6 +159,12 @@ export const uiStateAndMenuCommandsApi = {
       callback(direction)
     ipcRenderer.on('ui:worktreeHistoryNavigate', listener)
     return () => ipcRenderer.removeListener('ui:worktreeHistoryNavigate', listener)
+  },
+  onSelectWorkspaceRepo: (callback: (selection: WorkspaceRepoSelection) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, selection: WorkspaceRepoSelection) =>
+      callback(selection)
+    ipcRenderer.on('ui:selectWorkspaceRepo', listener)
+    return () => ipcRenderer.removeListener('ui:selectWorkspaceRepo', listener)
   },
   onRequestTabCreate: (callback: (data: BrowserTabCreateRequest) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, data: BrowserTabCreateRequest) =>

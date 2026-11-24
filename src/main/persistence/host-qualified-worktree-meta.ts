@@ -1,3 +1,4 @@
+import { pruneMultiRepoMemberForWorktree } from '../multi-repo-member-pruning'
 import {
   createRepoRowExecutionHostLookup,
   type RepoRowExecutionHostLookup
@@ -114,7 +115,7 @@ export function removeWorktreeMetaRow(
     getWorktreeMeta: (worktreeId: string) => WorktreeMeta | undefined
     removeWorktreeMeta: (target: HostWorktreeTarget) => void
     removeUnhostedWorktreeMeta?: (worktreeId: string) => boolean
-  },
+  } & Parameters<typeof pruneMultiRepoMemberForWorktree>[0],
   worktreeId: string,
   hostId: ExecutionHostId | undefined
 ): void {
@@ -124,6 +125,7 @@ export function removeWorktreeMetaRow(
   } else {
     store.removeUnhostedWorktreeMeta?.(worktreeId)
   }
+  pruneMultiRepoMemberForWorktree(store, worktreeId)
 }
 
 export function hostWorktreeTargetForRepo(

@@ -36,6 +36,7 @@ import {
   EMPTY_PROJECT_OPTIONS,
   type NewWorkspaceComposerCardProps
 } from './new-workspace-composer-card-props'
+import { MultiRepoComposerBranchHelper } from '../MultiRepoComposerBranchHelper'
 import type { NeedsSetupProjectHostOption } from '../../../lib/workspace/creation/project-host-setup-options'
 import { getSshStatusLabel } from './new-workspace-composer-ssh-status'
 import { useNewWorkspaceComposerFileDrop } from './use-new-workspace-composer-file-drop'
@@ -335,26 +336,32 @@ export default function NewWorkspaceComposerCard(
           selectedProjectName={selectedProjectName}
         />
         <NewWorkspaceComposerNameSection {...props} onNamePlainEnter={handleNamePlainEnter} />
-        <NewWorkspaceComposerAgentSection
-          {...props}
-          createDisabled={props.createDisabled || sparseEditing}
-          advancedLocked={sparseEditing}
-          visibleQuickAgents={visibleQuickAgents}
-          defaultTuiAgent={defaultTuiAgent}
-          handleSetDefaultAgent={handleSetDefaultAgent}
-        />
-        <NewWorkspaceComposerAdvancedSection
-          {...props}
-          onSparseEditingChange={setSparseEditing}
-          sparseEditing={sparseEditing}
-          branchNameInputId={branchNameInputId}
-          showSetupAgentStartupPolicy={showSetupAgentStartupPolicy}
-          parentWorktreeId={parentWorktreeId}
-          onParentWorktreeIdChange={onParentWorktreeIdChange}
-          selectedRepoExecutionHostId={selectedRepoExecutionHostId}
-          selectedRepoProjectId={selectedRepoProjectId}
-          activeFolderWorkspaceId={activeFolderWorkspaceId}
-        />
+        <MultiRepoComposerBranchHelper multiRepo={props.multiRepo} name={props.name} />
+        {/* Why: a multi-repo create starts no agent yet, so it offers no agent or prompt to lose. */}
+        {props.multiRepo?.active ? null : (
+          <NewWorkspaceComposerAgentSection
+            {...props}
+            createDisabled={props.createDisabled || sparseEditing}
+            advancedLocked={sparseEditing}
+            visibleQuickAgents={visibleQuickAgents}
+            defaultTuiAgent={defaultTuiAgent}
+            handleSetDefaultAgent={handleSetDefaultAgent}
+          />
+        )}
+        {props.multiRepo?.active ? null : (
+          <NewWorkspaceComposerAdvancedSection
+            {...props}
+            onSparseEditingChange={setSparseEditing}
+            sparseEditing={sparseEditing}
+            branchNameInputId={branchNameInputId}
+            showSetupAgentStartupPolicy={showSetupAgentStartupPolicy}
+            parentWorktreeId={parentWorktreeId}
+            onParentWorktreeIdChange={onParentWorktreeIdChange}
+            selectedRepoExecutionHostId={selectedRepoExecutionHostId}
+            selectedRepoProjectId={selectedRepoProjectId}
+            activeFolderWorkspaceId={activeFolderWorkspaceId}
+          />
+        )}
       </div>
       {!sparseEditing ? (
         <div className="shrink-0 space-y-1">

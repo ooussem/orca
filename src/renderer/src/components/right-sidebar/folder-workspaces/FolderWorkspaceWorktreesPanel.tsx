@@ -6,6 +6,7 @@ import { getAttachedWorktreesForFolderWorkspace } from './folder-workspace-attac
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import { selectSidebarChildrenByParentIdentity } from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
 import { FolderWorkspaceEmptyState } from './folder-workspace-empty-state'
+import MultiRepoWorkspaceRootPanel from '@/components/multi-repo/MultiRepoWorkspaceRootPanel'
 
 export default function FolderWorkspaceWorktreesPanel(): React.JSX.Element {
   const t = useTranslate()
@@ -35,6 +36,11 @@ export default function FolderWorkspaceWorktreesPanel(): React.JSX.Element {
         )}
       </div>
     )
+  }
+
+  // A multi-repo workspace lists its members with their state; plain folder workspaces keep the attached list.
+  if (folderWorkspace.multiRepo) {
+    return <MultiRepoWorkspaceRootPanel folderWorkspace={folderWorkspace} />
   }
 
   return (

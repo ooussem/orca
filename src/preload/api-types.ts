@@ -77,6 +77,7 @@ import type {
   TelemetryApi
 } from './api/diagnostics/telemetry-api'
 import type { UiCommandEventApi } from './api/window-ui/ui-command-event-api'
+import type { UiWorkspaceRepoEventApi } from './api/ui-workspace-repo-event-api'
 import type { UiWindowApi } from './api/window-ui/ui-window-api'
 import type { BotLinkEventApi } from './api/bot-link-event-api'
 import type { UpdaterApi } from './api/updater/updater-api'
@@ -92,6 +93,7 @@ import type {
   SparsePresetsApi,
   WorktreeApi
 } from './api/workspaces/worktree-api'
+import type { MultiRepoWorkspacesApi } from './api/multi-repo-workspace-api'
 
 // Flattens contracts that share one PreloadApi key: an intersection is not type-identical to the flat shape.
 type Merged<T> = { [K in keyof T]: T[K] }
@@ -105,6 +107,7 @@ export type PreloadApi = {
   projects: ProjectsApi
   projectGroups: ProjectGroupsApi
   folderWorkspaces: FolderWorkspacesApi
+  multiRepoWorkspaces: MultiRepoWorkspacesApi
   sparsePresets: SparsePresetsApi
   worktrees: WorktreeApi
   workspaceCleanup: WorkspaceCleanupApi
@@ -173,7 +176,7 @@ export type PreloadApi = {
   nativeChat: NativeChatApi
   fs: FilesystemApi['fs']
   git: Merged<GitInspectionApi & GitOperationApi>
-  ui: Merged<UiCommandEventApi & UiWindowApi & BotLinkEventApi>
+  ui: Merged<UiCommandEventApi & UiWorkspaceRepoEventApi & UiWindowApi & BotLinkEventApi>
   runtime: RuntimeApi['runtime']
   runtimeEnvironments: RuntimeApi['runtimeEnvironments']
   rateLimits: RateLimitsApi

@@ -7,6 +7,7 @@ import {
   type ExecutionHostId
 } from '../../../../../../shared/execution-host/execution-host'
 import { i18n } from '@/i18n/i18n'
+import { MultiRepoMemberDeleteNote } from '@/components/multi-repo/MultiRepoMemberNotices'
 
 export function DeleteWorktreeDialogDescription({
   description,
@@ -38,6 +39,7 @@ export function DeleteWorktreeDialogHeading({
   worktree,
   hostLabelById,
   mainWorktreeBlocker,
+  memberNoteWorktreeId,
   ...description
 }: {
   title: string
@@ -45,6 +47,8 @@ export function DeleteWorktreeDialogHeading({
   hostLabelById: ReadonlyMap<ExecutionHostId, string>
   /** The main worktree can't be deleted; this replaces the consequence line. */
   mainWorktreeBlocker: string | null
+  /** The single delete target, so a multi-repo member can say what its workspace keeps. */
+  memberNoteWorktreeId?: string
   description: string
   targetClassName: string
   targetName: string | undefined
@@ -65,6 +69,9 @@ export function DeleteWorktreeDialogHeading({
       ) : (
         <DeleteWorktreeDialogDescription {...description} />
       )}
+      {memberNoteWorktreeId ? (
+        <MultiRepoMemberDeleteNote worktreeId={memberNoteWorktreeId} />
+      ) : null}
     </DialogHeader>
   )
 }

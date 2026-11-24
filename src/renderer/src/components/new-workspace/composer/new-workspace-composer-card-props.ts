@@ -25,6 +25,7 @@ import type { TuiAgent } from '../../../../../shared/agent-launch/catalog/tui-ag
 import type { ExecutionHostId } from '../../../../../shared/execution-host/execution-host'
 
 import type { EphemeralVmRecipeOption } from '../run-target/run-target-options'
+import type { MultiRepoComposerView } from '../use-multi-repo-composer'
 
 export type RepoOption = React.ComponentProps<typeof RepoCombobox>['repos'][number]
 
@@ -145,5 +146,7 @@ export type NewWorkspaceComposerCardProps = {
   sparseControlsEnabled?: boolean
   onAddProjectOverride?: () => void
   onAddProjectEntryRequest?: (request: AddRepoDialogEntryRequest) => void
+  /** Present when the host offers multi-repo create; drives the picker, chips and footer. */
+  multiRepo?: MultiRepoComposerView
   onNestedDialogOpenChange?: (open: boolean) => void
 }

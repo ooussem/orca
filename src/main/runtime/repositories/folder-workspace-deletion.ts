@@ -1,4 +1,5 @@
 import { folderWorkspaceKey } from '../../../shared/workspace/identity/workspace-scope'
+import { MultiRepoWorkspaceError } from '../../../shared/multi-repo-workspace'
 import { projectGroupHookOwner } from '../../../shared/workspace-setup/hooks/workspace-hook-owner'
 import type { ArchiveHookOverride } from '../../../shared/worktree/removal/archive-hook-removal-gate'
 import { UNSAVED_DRAFTS_REMOVAL_REFUSAL } from '../../../shared/worktree/removal/removal'
@@ -55,6 +56,12 @@ export async function deleteFolderWorkspaceRow(
   const workspace = store.getFolderWorkspaces?.().find((entry) => entry.id === folderWorkspaceId)
   if (options.requireUniqueId && !workspace) {
     return { deleted: false }
+  }
+  if (workspace?.multiRepo && workspace.multiRepo.members.length > 0) {
+    throw new MultiRepoWorkspaceError(
+      'multi_repo_has_members',
+      'This workspace still has projects. Delete it as a multi-repo workspace.'
+    )
   }
   if (workspace && isLocalWslMoveRow(workspace)) {
     assertWslMoveProjectWritable(store, { folderWorkspaceId })

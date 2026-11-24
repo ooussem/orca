@@ -199,7 +199,7 @@ export function hasRepoWorktreeBasePath(repo: Pick<Repo, 'worktreeBasePath'>): b
   return getRepoWorktreeBasePath(repo) !== undefined
 }
 
-function getRuntimePathOps(
+export function getRuntimePathOps(
   repoPath: string,
   workspaceDir: string
 ): Pick<typeof posix, 'basename' | 'isAbsolute' | 'join' | 'normalize'> {
