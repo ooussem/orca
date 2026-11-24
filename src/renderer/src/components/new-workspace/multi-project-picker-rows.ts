@@ -33,10 +33,14 @@ export function buildMultiProjectPickerRows(
 ): MultiProjectPickerRows {
   const rows: MultiProjectPickerRows = { available: [], unavailable: [] }
   const full = isMultiRepoSelectionFull(selectedProjectIds)
+  // A project with several checkouts on a host has one option per checkout; the picker selects
+  // projects, and the chip menu chooses the checkout.
+  const seen = new Set<string>()
   for (const option of options) {
-    if (option.kind !== 'project') {
+    if (option.kind !== 'project' || seen.has(option.projectId)) {
       continue
     }
+    seen.add(option.projectId)
     const selected = selectedProjectIds.includes(option.projectId)
     const resolution = resolveProjectSetupForHost(option.projectId, hostId, setups)
     const unavailable =

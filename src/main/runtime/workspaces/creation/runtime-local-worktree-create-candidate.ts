@@ -273,6 +273,13 @@ export async function resolveRuntimeLocalWorktreeCreateCandidate(args: {
       )
     }
     if (placement) {
+      // Why: a placed create gets one attempt; when a pull request already claims the branch,
+      // the loop leaves before the path is ever tested, so the path is not what is in the way.
+      if (!worktreePath) {
+        throw new WorktreeCreateCollisionError(
+          `Branch "${branchName}" already has a pull request. Pick a different name.`
+        )
+      }
       throw new PlacedWorktreePathOccupiedError(worktreePath)
     }
     throw new Error(

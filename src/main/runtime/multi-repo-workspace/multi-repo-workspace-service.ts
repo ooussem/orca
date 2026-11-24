@@ -11,6 +11,7 @@ import type { WorkspaceCreatorProvenance } from '../../../shared/worktree/types'
 import type { TuiAgent } from '../../../shared/agent-launch/catalog/tui-agent'
 import { sanitizeWorktreeName } from '../../ipc/worktrees/paths/worktree-logic'
 import { track } from '../../telemetry/client'
+import { hostQualifiedRepoSelector } from '../workspaces/catalog/runtime-repo-selector'
 import {
   deleteMultiRepoWorkspace,
   inspectMultiRepoDelete,
@@ -246,7 +247,11 @@ export class MultiRepoWorkspaceService {
         this.markReady(folderWorkspaceId, memberId, adopted)
       } else {
         const result = await this.port.createWorktree({
-          repoSelector: member.repoId,
+          // Host-qualified: a bare id is ambiguous when another host registers the same repo.
+          repoSelector: hostQualifiedRepoSelector(
+            member.repoId,
+            workspace.multiRepo.executionHostId
+          ),
           name: workspace.name,
           ...(member.branchExplicit ? { branchNameOverride: member.branchName } : {}),
           ...(member.baseRef ? { baseBranch: member.baseRef } : {}),

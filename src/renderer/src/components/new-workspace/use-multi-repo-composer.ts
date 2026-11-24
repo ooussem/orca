@@ -11,7 +11,6 @@ import {
 } from '../../../../shared/execution-host/execution-host'
 import { MultiRepoWorkspaceError } from '../../../../shared/multi-repo-workspace'
 import { folderWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
-import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { NewWorkspaceProjectOption } from '@/lib/workspace/creation/new-workspace-project-options'
 import type { WorkspaceCreateErrorDisplay } from '@/lib/workspace/creation/workspace-create-error-format'
 import { multiRepoWorkspaceSupportedOnTarget } from '@/store/slices/multi-repo-workspace/multi-repo-workspace-capability'
@@ -35,12 +34,13 @@ import type {
 
 export type UseMultiRepoComposerInput = {
   primaryProjectId: string | null
+  /** The checkout picked for the primary project; its member uses it unless the chip menu overrides. */
+  primarySetupId?: string | null
   projectOptions: readonly NewWorkspaceProjectOption[]
   projectHostSetupOptions: readonly ProjectHostSetupOption[]
   /** Host of the Run on selection; the workspace host never derives from the chosen projects. */
   hostId: ExecutionHostId | null
   name: string
-  quickAgent: TuiAgent | null
   onPrimaryProjectChange: (projectId: string) => void
   onProjectHostSetupChange?: (setupId: string) => void
   onCreated: () => void
@@ -52,11 +52,11 @@ export type MultiRepoComposerView = ReturnType<typeof useMultiRepoComposer>
 
 export function useMultiRepoComposer({
   primaryProjectId,
+  primarySetupId,
   projectOptions,
   projectHostSetupOptions,
   hostId,
   name,
-  quickAgent,
   onPrimaryProjectChange,
   onProjectHostSetupChange,
   onCreated,
@@ -65,7 +65,14 @@ export function useMultiRepoComposer({
   const { projects, setups } = useProjectHostSetupProjection()
   const createMultiRepoWorkspace = useAppStore((state) => state.createMultiRepoWorkspace)
   const [extraProjectIds, setExtraProjectIds] = useState<string[]>([])
-  const [setupOverrides, setSetupOverrides] = useState<Record<string, string | undefined>>({})
+  const [chipSetupOverrides, setSetupOverrides] = useState<Record<string, string | undefined>>({})
+  const setupOverrides = useMemo(
+    () =>
+      primaryProjectId && primarySetupId
+        ? { [primaryProjectId]: primarySetupId, ...chipSetupOverrides }
+        : chipSetupOverrides,
+    [chipSetupOverrides, primaryProjectId, primarySetupId]
+  )
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<WorkspaceCreateErrorDisplay | null>(null)
   // Keyed by the host and selection it described, so a change of either clears it without an effect.
@@ -213,8 +220,7 @@ export function useMultiRepoComposer({
       const folderWorkspace = await createMultiRepoWorkspace({
         name: name.trim(),
         members: built.members,
-        clientMutationId: createBrowserUuid(),
-        ...(quickAgent ? { createdWithAgent: quickAgent } : {})
+        clientMutationId: createBrowserUuid()
       })
       saveLastMultiRepoSet(recordCreateInLastSet(lastSet, selectedProjectIds))
       if (!isSubmissionCancelled?.()) {
@@ -250,7 +256,6 @@ export function useMultiRepoComposer({
     lastSet,
     name,
     onCreated,
-    quickAgent,
     selectedProjectIds,
     setupOverrides,
     setups,

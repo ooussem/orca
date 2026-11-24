@@ -8,6 +8,10 @@ import type { Repo } from '../../../shared/repository/repo-types'
 import { MultiRepoWorkspaceError } from '../../../shared/multi-repo-workspace'
 import { pruneMultiRepoMemberForWorktree } from '../../multi-repo-member-pruning'
 import type { RuntimeStore } from '../construction/runtime-store-contract'
+import {
+  runtimeRepoSelectorText,
+  type RuntimeRepoSelector
+} from '../workspaces/catalog/runtime-repo-selector'
 import { assertWorktreeNotMultiRepoMember } from './multi-repo-member-lock'
 import type { MultiRepoWorkspacePort } from './multi-repo-workspace-port'
 import { MultiRepoWorkspaceService } from './multi-repo-workspace-service'
@@ -65,10 +69,11 @@ function createHarness(repoIds: string[]) {
     }),
     createWorktree: vi.fn(
       async (args: {
-        repoSelector: unknown
+        repoSelector: RuntimeRepoSelector
         placement?: { parentDir: string; leafName: string }
       }) => {
-        if (typeof args.repoSelector === 'string' && failingRepos.has(args.repoSelector)) {
+        const repoId = runtimeRepoSelectorText(args.repoSelector)
+        if (failingRepos.has(repoId)) {
           throw new Error('git exploded')
         }
         const path = join(args.placement!.parentDir, args.placement!.leafName)
@@ -76,7 +81,7 @@ function createHarness(repoIds: string[]) {
         // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the fake result carries only the worktree fields the service reads.
         return {
           worktree: {
-            id: `${String(args.repoSelector)}::${path}`,
+            id: `${repoId}::${path}`,
             instanceId: 'i',
             branch: 'refs/heads/feature'
           }
@@ -332,6 +337,36 @@ describe('multi-repo delete', () => {
     await expect(
       service.delete({ folderWorkspaceId: settled.id, forceMemberIds: ['nope'] })
     ).rejects.toMatchObject({ code: 'multi_repo_delete_force_not_named' })
+  })
+
+  it('finishes when a removed member keeps its meta row, as an archived checkout does', async () => {
+    const { service, port, workspaces } = createHarness(['a', 'b'])
+    await service.create({ name: 'Archived', members: [{ repoId: 'a' }, { repoId: 'b' }] })
+    const settled = await settle(workspaces)
+    // No prune: the removal succeeds but nothing takes the member out of the record.
+    port.removeWorktree.mockImplementation(async () => ({}))
+
+    const result = await service.delete({ folderWorkspaceId: settled.id })
+
+    expect(result.workspaceRemoved).toBe(true)
+    expect(port.deleteFolderWorkspace).toHaveBeenCalledWith(settled.id)
+  })
+})
+
+describe('multi-repo remove member', () => {
+  it('drops a ready member whose worktree left the disk, and refuses one that is still there', async () => {
+    const { service, workspaces } = createHarness(['a', 'b'])
+    await service.create({ name: 'Gone', members: [{ repoId: 'a' }, { repoId: 'b' }] })
+    const settled = await settle(workspaces)
+    const [a, b] = settled.multiRepo!.members
+    await rm(join(settled.folderPath, a.dirName), { recursive: true })
+
+    await service.removeMember(settled.id, a.memberId)
+    await expect(service.removeMember(settled.id, b.memberId)).rejects.toMatchObject({
+      code: 'multi_repo_member_not_removable'
+    })
+
+    expect(workspaces[0].multiRepo!.members.map((member) => member.memberId)).toEqual([b.memberId])
   })
 })
 

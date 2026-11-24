@@ -74,23 +74,21 @@ export function useSingleProjectCreateRecorder(onClose: () => void): {
 export function useQuickMultiRepo(args: {
   cardProps: CardProps
   projectIdRef: React.MutableRefObject<string | null>
-  quickAgent: TuiAgent | null
   onClose: () => void
   isSubmissionCancelled: () => boolean
   singleCreateDisabled: boolean
-  launchReady: boolean
 }): { multiRepo: ReturnType<typeof useMultiRepoComposer>; createDisabled: boolean } {
-  const { cardProps, projectIdRef, quickAgent, onClose, isSubmissionCancelled } = args
+  const { cardProps, projectIdRef, onClose, isSubmissionCancelled } = args
   useEffect(() => {
     projectIdRef.current = cardProps.selectedRepoProjectId ?? null
   }, [cardProps.selectedRepoProjectId, projectIdRef])
   const multiRepo = useMultiRepoComposer({
     primaryProjectId: cardProps.selectedRepoProjectId ?? null,
+    primarySetupId: cardProps.selectedProjectHostSetupId ?? null,
     projectOptions: cardProps.projectOptions ?? [],
     projectHostSetupOptions: cardProps.projectHostSetupOptions ?? [],
     hostId: cardProps.selectedRepoExecutionHostId ?? null,
     name: cardProps.name,
-    quickAgent,
     onPrimaryProjectChange: cardProps.onProjectChange,
     onProjectHostSetupChange: cardProps.onProjectHostSetupChange,
     onCreated: onClose,
@@ -100,8 +98,7 @@ export function useQuickMultiRepo(args: {
     ? multiRepo.creating ||
       multiRepo.blockedCount > 0 ||
       multiRepo.supported === false ||
-      cardProps.name.trim() === '' ||
-      !args.launchReady
+      cardProps.name.trim() === ''
     : args.singleCreateDisabled
   return { multiRepo, createDisabled }
 }

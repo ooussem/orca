@@ -1,4 +1,4 @@
-import { access, rmdir } from 'node:fs/promises'
+import { rmdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import type { FolderWorkspace } from '../../../shared/folder-workspaces/folder-workspace-types'
 import {
@@ -15,6 +15,8 @@ import { ensurePathWithinWorkspace } from '../../ipc/worktrees/paths/worktree-lo
 import { getStatus } from '../../git/source-control/status/status-read'
 import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
 import { track } from '../../telemetry/client'
+import { findLocalRepo } from './multi-repo-create-support'
+import { pathExists } from './multi-repo-member-adoption'
 import type { MultiRepoWorkspacePort } from './multi-repo-workspace-port'
 import { requireMultiRepoWorkspace, writeMultiRepoRecord } from './multi-repo-workspace-record'
 
@@ -64,7 +66,7 @@ async function inspectMember(
     }
   }
   const store = port.requireStore()
-  const repo = store.getRepos().find((entry) => entry.id === member.repoId)
+  const repo = findLocalRepo(store.getRepos(), member.repoId)
   const [dirtyCount, unpublishedCommitCount, branchMerged] = await Promise.all([
     readDirtyCount(worktreePath),
     readUnpublishedCommitCount(worktreePath, repo?.path, member.baseRef),
@@ -112,8 +114,10 @@ export async function deleteMultiRepoWorkspace(
       runHooks: request.runHooks !== false
     })
   )
+  // Why: removed members are dropped here too. The worktree-meta prune covers most removals,
+  // but an archived checkout keeps its meta row, so its member would otherwise stay `ready`.
   const droppedIds = new Set(
-    outcomes.filter((outcome) => outcome.status === 'dropped').map((outcome) => outcome.memberId)
+    outcomes.filter((outcome) => outcome.status !== 'failed').map((outcome) => outcome.memberId)
   )
   if (droppedIds.size > 0) {
     writeMultiRepoRecord(store, request.folderWorkspaceId, (current) => ({
@@ -277,15 +281,6 @@ async function isBranchMerged(repoPath: string, branch: string): Promise<boolean
     return true
   } catch (error) {
     return error instanceof Error && 'code' in error && error.code === 1 ? false : null
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path)
-    return true
-  } catch {
-    return false
   }
 }
 

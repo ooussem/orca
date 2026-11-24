@@ -337,14 +337,17 @@ export default function NewWorkspaceComposerCard(
         />
         <NewWorkspaceComposerNameSection {...props} onNamePlainEnter={handleNamePlainEnter} />
         <MultiRepoComposerBranchHelper multiRepo={props.multiRepo} name={props.name} />
-        <NewWorkspaceComposerAgentSection
-          {...props}
-          createDisabled={props.createDisabled || sparseEditing}
-          advancedLocked={sparseEditing}
-          visibleQuickAgents={visibleQuickAgents}
-          defaultTuiAgent={defaultTuiAgent}
-          handleSetDefaultAgent={handleSetDefaultAgent}
-        />
+        {/* Why: a multi-repo create starts no agent yet, so it offers no agent or prompt to lose. */}
+        {props.multiRepo?.active ? null : (
+          <NewWorkspaceComposerAgentSection
+            {...props}
+            createDisabled={props.createDisabled || sparseEditing}
+            advancedLocked={sparseEditing}
+            visibleQuickAgents={visibleQuickAgents}
+            defaultTuiAgent={defaultTuiAgent}
+            handleSetDefaultAgent={handleSetDefaultAgent}
+          />
+        )}
         {props.multiRepo?.active ? null : (
           <NewWorkspaceComposerAdvancedSection
             {...props}

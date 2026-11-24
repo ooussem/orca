@@ -10,7 +10,10 @@ export function createMultiRepoWorkspacePort(runtime: OrcaRuntimeService): Multi
     createProjectGroup: (input) => runtime.createProjectGroup(input),
     createFolderWorkspace: async (input) =>
       (await runtime.createFolderWorkspace(input)).folderWorkspace,
-    deleteFolderWorkspace: (id) => runtime.deleteFolderWorkspace(id),
+    // Why: the parent goes after its members are already removed, and the delete dialog has
+    // listed the root's unsaved files as discarded; refusing here would strand an empty workspace.
+    deleteFolderWorkspace: (id) =>
+      runtime.deleteFolderWorkspace(id, { discardUnsavedDrafts: true }),
     createWorktree: (args) => runtime.createManagedWorktree(args),
     removeWorktree: (worktreeId, removal) =>
       queueWorkspaceDelete(

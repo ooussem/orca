@@ -57,7 +57,6 @@ function input(patch: Partial<UseMultiRepoComposerInput> = {}): UseMultiRepoComp
     projectHostSetupOptions: [],
     hostId: 'local',
     name: 'checkout-flow',
-    quickAgent: null,
     onPrimaryProjectChange: vi.fn(),
     onCreated: vi.fn(),
     ...patch
@@ -137,22 +136,39 @@ describe('useMultiRepoComposer', () => {
   it('creates with the repo ids of the resolved setups in selection order and remembers the set', async () => {
     const onCreated = vi.fn()
     create.mockResolvedValue({ id: 'folder-1' })
-    const { result } = renderHook(() =>
-      useMultiRepoComposer(input({ onCreated, quickAgent: 'claude' }))
-    )
+    const { result } = renderHook(() => useMultiRepoComposer(input({ onCreated })))
     act(() => result.current.toggleProject('web'))
     await act(() => result.current.submit())
     expect(create).toHaveBeenCalledWith({
       name: 'checkout-flow',
       members: [{ repoId: 'repo-api' }, { repoId: 'repo-web' }],
-      clientMutationId: expect.any(String),
-      createdWithAgent: 'claude'
+      clientMutationId: expect.any(String)
     })
     expect(mocks.activate).toHaveBeenCalledWith('folder:folder-1', {
       navigationIntent: 'user-open'
     })
     expect(onCreated).toHaveBeenCalledTimes(1)
     expect(loadLastMultiRepoSet()).toEqual({ projectIds: ['api', 'web'], singleCreatesSince: 0 })
+  })
+
+  it('creates the primary member from the checkout picked in the composer, not the oldest one', async () => {
+    create.mockResolvedValue({ id: 'folder-1' })
+    useAppStore.setState({
+      projectHostSetups: [
+        setup('api'),
+        setup('api', { id: 'api-second', repoId: 'repo-api-second', createdAt: 2 }),
+        setup('web')
+      ]
+    })
+    const { result } = renderHook(() =>
+      useMultiRepoComposer(input({ primarySetupId: 'api-second' }))
+    )
+    act(() => result.current.toggleProject('web'))
+    await act(() => result.current.submit())
+    expect(create.mock.calls[0][0].members).toEqual([
+      { repoId: 'repo-api-second' },
+      { repoId: 'repo-web' }
+    ])
   })
 
   it('keeps the remembered set but neither activates nor closes when the dialog was dismissed mid-create', async () => {

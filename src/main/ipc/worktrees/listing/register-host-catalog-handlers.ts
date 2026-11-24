@@ -28,6 +28,7 @@ import {
 } from './ssh-worktree-fallback'
 import type { WorktreeIpcContext } from '../worktree-ipc-context'
 import { readAllWorktreeMetaForHost } from '../../../persistence/host-qualified-worktree-meta'
+import { pruneMultiRepoMemberForWorktree } from '../../../multi-repo-member-pruning'
 import { hostWorktreeTarget } from '../../../../shared/worktree/host-qualified-identity'
 
 export function registerHostCatalogHandlers(context: WorktreeIpcContext): void {
@@ -134,6 +135,7 @@ export function registerHostCatalogHandlers(context: WorktreeIpcContext): void {
         store.removeWorktreeMeta(
           hostWorktreeTarget({ id: worktreeId, hostId: requestedExecutionHostId })
         )
+        pruneMultiRepoMemberForWorktree(store, worktreeId)
         // Off-host rows bypass local GC, so this removal must also retire persisted agent status.
         agentHookServer.dropStatusEntriesForRemovedWorktree(worktreeId, parsedHost.id)
         forgottenWorktreeIds.push(worktreeId)

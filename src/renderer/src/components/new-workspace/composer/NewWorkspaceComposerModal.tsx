@@ -219,11 +219,9 @@ function QuickTabBody({
   const { multiRepo, createDisabled } = useQuickMultiRepo({
     cardProps,
     projectIdRef: recorder.projectIdRef,
-    quickAgent,
     onClose,
     isSubmissionCancelled,
-    singleCreateDisabled: formDisabled || !launchSelection.ready,
-    launchReady: launchSelection.ready
+    singleCreateDisabled: formDisabled || !launchSelection.ready
   })
 
   const handleQuickAgentChange = useCallback(

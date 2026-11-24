@@ -23,6 +23,14 @@ import { allocateMemberDirNames } from './multi-repo-root-allocation'
 import type { MultiRepoWorkspaceCreateInput } from './multi-repo-workspace-service'
 import type { MultiRepoWorkspacePort } from './multi-repo-workspace-port'
 
+/** One repo id can be registered on several hosts; members live on this one, so its row wins. */
+export function findLocalRepo(repos: readonly Repo[], repoId: string): Repo | undefined {
+  const matches = repos.filter((entry) => entry.id === repoId)
+  return (
+    matches.find((entry) => getRepoExecutionHostId(entry) === LOCAL_EXECUTION_HOST_ID) ?? matches[0]
+  )
+}
+
 export function validateMultiRepoRepos(
   port: MultiRepoWorkspacePort,
   repoIds: readonly string[]
@@ -39,7 +47,7 @@ export function validateMultiRepoRepos(
   }
   const all = port.requireStore().getRepos()
   return repoIds.map((repoId) => {
-    const repo = all.find((entry) => entry.id === repoId)
+    const repo = findLocalRepo(all, repoId)
     if (!repo) {
       throw new MultiRepoWorkspaceError('multi_repo_repo_not_found', 'Project was not found.', {
         repoId

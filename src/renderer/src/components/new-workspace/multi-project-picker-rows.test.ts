@@ -49,6 +49,16 @@ describe('buildMultiProjectPickerRows', () => {
     ])
   })
 
+  it('lists a project with several checkouts once', () => {
+    const rows = buildMultiProjectPickerRows(
+      [option('api'), { ...option('api'), id: 'project-checkout:api-second' }, option('web')],
+      [setup('api'), setup('api', { id: 'api-second', createdAt: 2 }), setup('web')],
+      'local',
+      []
+    )
+    expect(rows.available.map((row) => row.option.projectId)).toEqual(['api', 'web'])
+  })
+
   it('offers the other host only when exactly one alternative exists', () => {
     const one = buildMultiProjectPickerRows(
       options,
